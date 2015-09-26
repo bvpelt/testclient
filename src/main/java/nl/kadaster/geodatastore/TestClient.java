@@ -634,11 +634,35 @@ public class TestClient {
 
     private String getStringProperty(final Properties p, final String name, final String def) {
         String s = null;
-        s = p.getProperty("host");
+        s = p.getProperty(name);
         if (s == null) {
             s = def;
         }
         return s;
+    }
+
+    /**
+     * Check if config is valid
+     * if not try repair by setting reasonable defaults
+     * @throws Exception
+     */
+    private void checkConfig() {
+        if (useProxy) {
+            // make sure proxyhost and proxyport have a value
+            if (((proxyHost == null) || (proxyHost.length() == 0)) || (proxyPort == 0)) {
+                logger.error("Inconsistency in configuration, useProxy: {} but proxyHost: {} and proxyPort: {}", useProxy, proxyHost, proxyPort);
+            }
+        }
+
+        if (useBasicAuth) {
+            if (((password == null) || (password.length() == 0)) || ((username == null) || (username.length() == 0))) {
+                logger.error("Inconsistency in configuration, useBasicAuth: {} but username: {} and password: {}", useBasicAuth, username, password);
+            }
+        }
+
+        if ((scheme.equals(HTTPS) || (port == 443)) && ((keystorepwd == null) || (keystorepwd.length() == 0))) { // expect ssl
+            logger.error("Inconsistency in configuration, expected keystore password, but none known");
+        }
     }
 
     private void initialize() {
@@ -706,6 +730,9 @@ public class TestClient {
                 b = Boolean.parseBoolean(s);
                 verbose = b;
             }
+
+            checkConfig();
+
         } catch (Exception e) {
             logger.error("Problem loading properties", e);
         }
