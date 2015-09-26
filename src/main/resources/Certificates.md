@@ -1,6 +1,12 @@
 # Certificates
 
-This document describes how to fill the keystore
+In order for the testclient to work fine there are a few things to take into consideration.
++ The proxy uses ssl termination. In order to trust the proxy the root certificate kadasterca
+must be inserted into a trust store
++ The test.geodatastore.pdok.nl url uses a pki test certificate so the trial pkioverheid test root ca - g2
+must be inserted into a trust store
+
+This document describes how to fill the truststore. Java uses a keystore.
 
 The password for proxykeystore.jks is geodatastore
 

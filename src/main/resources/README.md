@@ -3,11 +3,15 @@
 ## Maven dependencies
 Find maven dependencies by using [https://repository.sonatype.org/](https://repository.sonatype.org/)
 
+## Github
+See [Git Branching Basic Branching and Merging](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging)
+for usefull documentation about using branches/merges in git.
+
 ## Maven assembly
-[http://www.mkyong.com/maven/create-a-fat-jar-file-maven-assembly-plugin/](http://www.mkyong.com/maven/create-a-fat-jar-file-maven-assembly-plugin/)
+[Example maven assembly](http://www.mkyong.com/maven/create-a-fat-jar-file-maven-assembly-plugin/)
 
 ## Slf4J
-[http://www.slf4j.org/manual.html](http://www.slf4j.org/manual.html)
+[Documentation](http://www.slf4j.org/manual.html)
 
 ## SSL connection
 Import certificates into keystore proxykeystore.jks
@@ -39,14 +43,14 @@ Certificate fingerprint (SHA1): 5B:90:99:30:C0:29:0C:34:59:BD:8D:63:D9:2B:B4:1C:
 
 ## References
 ### Springboot - package hello
-+ Documentation found on [http://docs.spring.io/spring/docs/current/javadoc-api/index.html?org/springframework/web/client/RestTemplate.html](http://docs.spring.io/spring/docs/current/javadoc-api/index.html?org/springframework/web/client/RestTemplate.html)
-+ Springboot example [https://spring.io/guides/gs/consuming-rest/](https://spring.io/guides/gs/consuming-rest/)
-+ for basic authentication [http://www.baeldung.com/2012/04/16/how-to-use-resttemplate-with-basic-authentication-in-spring-3-1/](http://www.baeldung.com/2012/04/16/how-to-use-resttemplate-with-basic-authentication-in-spring-3-1/)
-+ Example [http://www.baeldung.com/2012/03/12/project-configuration-with-spring/](http://www.baeldung.com/2012/03/12/project-configuration-with-spring/)
++ Documentation found on [Spring boot RestTemplate](http://docs.spring.io/spring/docs/current/javadoc-api/index.html?org/springframework/web/client/RestTemplate.html)
++ Springboot example [Consuming rest services](https://spring.io/guides/gs/consuming-rest/)
++ Example basic authentication [Resttemplate with basic authentication in spring-3-1](http://www.baeldung.com/2012/04/16/how-to-use-resttemplate-with-basic-authentication-in-spring-3-1/)
++ Example [project configuration with spring](http://www.baeldung.com/2012/03/12/project-configuration-with-spring/)
 
 ### Markdown
-+ Documentation [https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables)
++ Documentation [Markdown Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
 
 ### Rest
-+ httpclient components [https://hc.apache.org/](https://hc.apache.org/)
-+ sonatype nexus [https://repository.sonatype.org/](https://repository.sonatype.org/)
++ httpclient components [Documentation](https://hc.apache.org/)
++ sonatype nexus [Search maven dependencies](https://repository.sonatype.org/)

@@ -35,10 +35,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.Properties;
 
-public class TestClient {
+public class TestClient02 {
     private static String HTTPS = "https";
 
-    private static Logger logger = LoggerFactory.getLogger(TestClient.class);
+    private static Logger logger = LoggerFactory.getLogger(TestClient02.class);
 
     // The Parameters of the test site
     private String scheme;
@@ -65,14 +65,13 @@ public class TestClient {
     private boolean useBasicAuth;
     private boolean verbose;
 
-    // Private contexts for basic authentication
+    // Private contexts
     CredentialsProvider credentialsProvider = null;
-    HttpClientContext localContext = null;
 
     /**
      * Create and initialize the test client
      */
-    public TestClient() {
+    public TestClient02() {
         // The Parameters of the test site
         scheme = HTTPS;
         port = 443;
@@ -124,20 +123,11 @@ public class TestClient {
     /**
      * Get a parameterized http client, based on usage off https and useProxy setting
      *
-     * Assumes a CredentialsProvider credsProvider has been created if basicAuthentication is used!
-     *
      * @return a valid CloableHttpClient based on the scheme and useProxy setting
      */
-    private CloseableHttpClient getHttpClient() throws Exception {
+    private CloseableHttpClient getHttpClient(CredentialsProvider credsProvider) {
         CloseableHttpClient httpclient = null;
         HttpHost proxy = new HttpHost(proxyHost, proxyPort);
-
-        if (useBasicAuth) {
-
-            if (credentialsProvider == null) {
-                throw new Exception("Expected a credentialsProvider for use with basic authentication, but not found");
-            }
-        }
 
         try {
             logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", scheme, useProxy, useBasicAuth);
@@ -158,63 +148,58 @@ public class TestClient {
 
 
                 // Only if scheme is https and use Proxy the certificate store should be loaded!!!
-                if (useBasicAuth) {
-
-                    if (useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setProxy(proxy)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                    if (!useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                } else {
-                    if (useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setProxy(proxy)
-                                .build();
-                    }
-
-
-                    if (!useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .build();
-                    }
+                if (scheme.equals(HTTPS) && useProxy && useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setSSLSocketFactory(sslsf)
+                            .setProxy(proxy)
+                            .setDefaultCredentialsProvider(credsProvider)
+                            .build();
                 }
+
+                if (scheme.equals(HTTPS) && useProxy && !useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setSSLSocketFactory(sslsf)
+                            .setProxy(proxy)
+                            .build();
+                }
+
+                if (scheme.equals(HTTPS) && !useProxy && useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setSSLSocketFactory(sslsf)
+                            .setDefaultCredentialsProvider(credsProvider)
+                            .build();
+                }
+
+                if (scheme.equals(HTTPS) && !useProxy && !useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setSSLSocketFactory(sslsf)
+                            .build();
+                }
+
             } else {
                 // scheme not equal to HTTPS
-                if (useBasicAuth) {
+                if (useProxy && useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setProxy(proxy)
+                            .setDefaultCredentialsProvider(credsProvider)
+                            .build();
+                }
 
-                    if (useProxy && useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .setProxy(proxy)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
+                if (useProxy && !useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setProxy(proxy)
+                            .build();
+                }
 
-                    if (!useProxy && useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                } else {
-                    if (useProxy && !useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .setProxy(proxy)
-                                .build();
-                    }
+                if (!useProxy && useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .setDefaultCredentialsProvider(credsProvider)
+                            .build();
+                }
 
-                    if (!useProxy && !useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .build();
-                    }
+                if (!useProxy && !useBasicAuth) {
+                    httpclient = HttpClients.custom()
+                            .build();
                 }
             }
 
@@ -225,9 +210,57 @@ public class TestClient {
         return httpclient;
     }
 
-    private void createBasicAuthContext(final HttpHost target) {
-        credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(
+    /**
+     * executeRequestNoAuth - Execute a http post request
+     *
+     * @param httpPost
+     * @return
+     */
+    /*
+    private CloseableHttpResponse executeRequestNoAuth(HttpPost httpPost) {
+        String keystorepwd = "geodatastore";
+        CredentialsProvider credentialsProvider;
+        CloseableHttpResponse response = null;
+
+        HttpHost target = new HttpHost(host, port, scheme);
+
+        try {
+            credentialsProvider = new BasicCredentialsProvider();
+            CloseableHttpClient httpclient = getHttpClient(credentialsProvider);
+
+            logger.info("Sending request to: {}", httpPost.toString());
+
+            response = httpclient.execute(target, httpPost);
+
+            ProtocolVersion protocolVersion = response.getProtocolVersion();
+            int statusCode = response.getStatusLine().getStatusCode();
+            logger.info("Protocol version: {} status code {}", protocolVersion.toString(), Integer.toString(statusCode));
+        } catch (Exception e) {
+            logger.error("Error during execute request", e);
+        } finally {
+            try {
+                if (response != null) {
+                    response.close();
+                }
+            } catch (Exception e) {
+
+            }
+        }
+        return response;
+    }
+*/
+
+
+    /**
+     * getLocalContext - Create a context for basic authentication
+     *
+     * @param target
+     * @return a HttpClientContext
+     */
+    /*
+    private HttpClientContext getLocalContext(CredentialsProvider credsProvider, final HttpHost target) {
+        credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
                 new AuthScope(target.getHostName(), target.getPort()),
                 new UsernamePasswordCredentials(username, password));
 
@@ -240,10 +273,12 @@ public class TestClient {
         authCache.put(target, basicAuth);
 
         // Add AuthCache to the execution context
-        localContext = HttpClientContext.create();
+        HttpClientContext localContext = HttpClientContext.create();
         localContext.setAuthCache(authCache);
-    }
 
+        return localContext;
+    }
+*/
     /**
      * executeRequest
      *
@@ -254,14 +289,33 @@ public class TestClient {
     private CloseableHttpResponse executeRequest(HttpRequestBase httpRequest) {
         CloseableHttpResponse response = null;
         HttpHost target = new HttpHost(host, port, scheme);
+        HttpClientContext localContext = null;
+        CredentialsProvider credentialsProvider = null;
 
         try {
+            credentialsProvider = new BasicCredentialsProvider();
+
             // Create and fill a credentialsProvider at this place, do not move this !!1
             if (useBasicAuth) {
-                createBasicAuthContext(target);
+                // credentialsProvider = new BasicCredentialsProvider();
+                credentialsProvider.setCredentials(
+                        new AuthScope(target.getHostName(), target.getPort()),
+                        new UsernamePasswordCredentials(username, password));
+
+                // Create AuthCache instance
+                AuthCache authCache = new BasicAuthCache();
+
+                // Generate BASIC scheme object and add it to the local
+                // auth cache
+                BasicScheme basicAuth = new BasicScheme();
+                authCache.put(target, basicAuth);
+
+                // Add AuthCache to the execution context
+                localContext = HttpClientContext.create();
+                localContext.setAuthCache(authCache);
             }
 
-            CloseableHttpClient httpclient = getHttpClient();
+            CloseableHttpClient httpclient = getHttpClient(credentialsProvider);
 
             logger.info("Sending request to: {}", httpRequest.toString());
 
@@ -289,6 +343,68 @@ public class TestClient {
         return response;
     }
 
+
+    /**
+     * executeRequest
+     *
+     * @param httpPost
+     * @return Do close response on exit, but do not deassing response, it can still be read out for results
+     */
+    private CloseableHttpResponse executeRequest01(HttpPost httpPost) {
+        CloseableHttpResponse response = null;
+        HttpHost target = new HttpHost(host, port, scheme);
+        HttpClientContext localContext = null;
+        CredentialsProvider credentialsProvider;
+
+        try {
+            credentialsProvider = new BasicCredentialsProvider();
+
+            // Create and fill a credentialsProvider at this place, do not move this !!1
+            if (useBasicAuth) {
+
+                credentialsProvider = new BasicCredentialsProvider();
+                credentialsProvider.setCredentials(
+                        new AuthScope(target.getHostName(), target.getPort()),
+                        new UsernamePasswordCredentials(username, password));
+
+                // Create AuthCache instance
+                AuthCache authCache = new BasicAuthCache();
+
+                // Generate BASIC scheme object and add it to the local
+                // auth cache
+                BasicScheme basicAuth = new BasicScheme();
+                authCache.put(target, basicAuth);
+
+                // Add AuthCache to the execution context
+                localContext = HttpClientContext.create();
+                localContext.setAuthCache(authCache);
+            }
+
+            CloseableHttpClient httpclient = getHttpClient(credentialsProvider);
+
+            logger.info("Sending request to: {} ", httpPost.getRequestLine());
+
+            if (useBasicAuth) {
+                response = httpclient.execute(target, httpPost, localContext);
+            } else {
+                response = httpclient.execute(target, httpPost);
+            }
+            ProtocolVersion protocolVersion = response.getProtocolVersion();
+            int statusCode = response.getStatusLine().getStatusCode();
+            logger.info("Protocol version: {} status code {}", protocolVersion.toString(), Integer.toString(statusCode));
+        } catch (Exception e) {
+            logger.error("Error during execute request", e);
+        } finally {
+            try {
+                if (response != null) {
+                    response.close();
+                }
+            } catch (Exception e) {
+                logger.error("Error closing connection", e);
+            }
+        }
+        return response;
+    }
 
     private int evaluateResult(String testName, CloseableHttpResponse response, int statusCode) {
         final String expectedProtocolVersion = "HTTP/1.1";
@@ -644,7 +760,7 @@ public class TestClient {
         InputStream stream = null;
         try {
             properties = new Properties();
-            stream = TestClient.class.getClassLoader().getResourceAsStream("test.properties");
+            stream = TestClient02.class.getClassLoader().getResourceAsStream("test.properties");
             properties.load(stream);
         } catch (Exception e) {
             throw e;
