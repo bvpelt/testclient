@@ -39,7 +39,8 @@ public class TestClient02 {
     private static String HTTPS = "https";
 
     private static Logger logger = LoggerFactory.getLogger(TestClient02.class);
-
+    // Private contexts
+    CredentialsProvider credentialsProvider = null;
     // The Parameters of the test site
     private String scheme;
     private int port;
@@ -47,26 +48,19 @@ public class TestClient02 {
     private String path;
     private String username;
     private String password;
-
     // The proxy settings (specific to company outbound internet access)
     private String proxyHost;
     private int proxyPort;
-
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd;
-
     // The connection parameters
     private int socketTimeOut; // milliseconds
     private int connectTimeOut; // milliseconds
     private int requestTimeOut; // milliseconds
-
     // Optional parameters
     private boolean useProxy;
     private boolean useBasicAuth;
     private boolean verbose;
-
-    // Private contexts
-    CredentialsProvider credentialsProvider = null;
 
     /**
      * Create and initialize the test client
@@ -279,6 +273,7 @@ public class TestClient02 {
         return localContext;
     }
 */
+
     /**
      * executeRequest
      *

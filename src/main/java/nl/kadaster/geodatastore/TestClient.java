@@ -39,7 +39,9 @@ public class TestClient {
     private static String HTTPS = "https";
 
     private static Logger logger = LoggerFactory.getLogger(TestClient.class);
-
+    // Private contexts for basic authentication
+    CredentialsProvider credentialsProvider = null;
+    HttpClientContext localContext = null;
     // The Parameters of the test site
     private String scheme;
     private int port;
@@ -47,27 +49,19 @@ public class TestClient {
     private String path;
     private String username;
     private String password;
-
     // The proxy settings (specific to company outbound internet access)
     private String proxyHost;
     private int proxyPort;
-
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd;
-
     // The connection parameters
     private int socketTimeOut; // milliseconds
     private int connectTimeOut; // milliseconds
     private int requestTimeOut; // milliseconds
-
     // Optional parameters
     private boolean useProxy;
     private boolean useBasicAuth;
     private boolean verbose;
-
-    // Private contexts for basic authentication
-    CredentialsProvider credentialsProvider = null;
-    HttpClientContext localContext = null;
 
     /**
      * Create and initialize the test client
@@ -123,7 +117,7 @@ public class TestClient {
 
     /**
      * Get a parameterized http client, based on usage off https and useProxy setting
-     *
+     * <p/>
      * Assumes a CredentialsProvider credsProvider has been created if basicAuthentication is used!
      *
      * @return a valid CloableHttpClient based on the scheme and useProxy setting
@@ -271,7 +265,7 @@ public class TestClient {
                 response = httpclient.execute(target, httpRequest);
             }
 
-            response = httpclient.execute(target, httpRequest, localContext);
+            //response = httpclient.execute(target, httpRequest, localContext);
             ProtocolVersion protocolVersion = response.getProtocolVersion();
             int statusCode = response.getStatusLine().getStatusCode();
             logger.info("Protocol version: {} status code {}", protocolVersion.toString(), Integer.toString(statusCode));
@@ -288,7 +282,6 @@ public class TestClient {
         }
         return response;
     }
-
 
     private int evaluateResult(String testName, CloseableHttpResponse response, int statusCode) {
         final String expectedProtocolVersion = "HTTP/1.1";
