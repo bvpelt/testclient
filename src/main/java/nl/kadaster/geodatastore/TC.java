@@ -37,9 +37,9 @@ import java.net.URI;
 public class TC {
     private static Logger logger = LoggerFactory.getLogger(TC.class);
 
-    private static String HTTPS = "https";
-    private static String HTTPGET = "GET";
-    private static String HTTPPOST = "POST";
+    public static String HTTPS = "https";
+    public static String HTTPGET = "GET";
+    public static String HTTPPOST = "POST";
 
     private HttpHost proxy = null;
 
@@ -79,7 +79,95 @@ public class TC {
         useProxy = true;
     }
 
-    public CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+
+    public CloseableHttpResponse sendRequest(final String url, final String method) throws Exception {
+
+        CloseableHttpResponse response = null;
+
+        if (!((method.toUpperCase().equals(HTTPGET)) || (method.toUpperCase().equals(HTTPPOST)))) {
+            throw new Exception("Unknown and unsupported method in url");
+        }
+        URI uri = URI.create(url);
+
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+        String path = uri.getPath();
+        String authority = uri.getAuthority();
+        String query = uri.getQuery();
+        String fragment = uri.getFragment();
+
+        // if authority
+        // split userinfo:host:port,
+        // then split userinfo into username password
+        String user = "";
+        String pwd = "";
+        String port = "";
+        int iport = 0;
+
+        if ((authority != null) && (authority.length()>0)) {
+            String[] parts = authority.split(":");
+            String part1;
+
+            part1 = parts[0];
+            if (part1.contains("@")) { // username password specified (optional)
+                String[] pwdparts = part1.split("@");
+                user = pwdparts[0];
+                pwd = pwdparts[1];
+
+                if ((user == null) || (user.length() == 0) || (pwd == null) || (pwd.length() == 0)) {
+                    throw new Exception("username password expected, none specified");
+                }
+
+                if (parts.length > 1) {
+                    host = parts[1];
+                }
+                if (parts.length > 2) {
+                    port = parts[2];
+                    iport = Integer.parseInt(port);
+                } else {
+                    if (scheme.toUpperCase().equals(HTTPS)) {
+                        iport = 443;
+                    } else {
+                        iport = 80;
+                    }
+                }
+            } else {
+                host = part1;
+                if (parts.length > 1) {
+                    port = parts[1];
+                    iport = Integer.parseInt(port);
+                }  else {
+                    if (scheme.toUpperCase().equals(HTTPS)) {
+                        iport = 443;
+                    } else {
+                        iport = 80;
+                    }
+                }
+            }
+        }
+
+        if (method.toUpperCase().equals(HTTPGET)) {
+            if (user.length() > 0) {
+                response = sendGetRequest(scheme, host, iport, path, username, pwd);
+            } else {
+                response = sendGetRequest(scheme, host, iport, path);
+            }
+        }
+
+        if (method.toUpperCase().equals(HTTPPOST)) {
+            if (user.length() > 0) {
+                response = sendPostRequest(scheme, host, iport, path, username, pwd);
+            } else {
+                response = sendPostRequest(scheme, host, iport, path);
+            }
+
+        }
+
+        return response;
+    }
+
+
+    private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
         if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
             throw new Exception("For basic authentication username and password are required");
         } else {
@@ -94,7 +182,7 @@ public class TC {
         return response;
     }
 
-    public CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path) {
+    private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path) {
         CloseableHttpResponse response = null;
         URI uri = null;
         HttpPost httpPost = null;
@@ -131,7 +219,7 @@ public class TC {
         return response;
     }
 
-    public CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
         if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
             throw new Exception("For basic authentication username and password are required");
         } else {
@@ -146,7 +234,7 @@ public class TC {
         return response;
     }
 
-    public CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path) {
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path) {
         CloseableHttpResponse response = null;
         URI uri = null;
         HttpGet httpGet = null;
