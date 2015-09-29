@@ -198,6 +198,9 @@ public class TestClient {
         }
 
         if (method.toUpperCase().equals(HTTPGET)) {
+            if (query.length() > 0) {
+                path += "?" + query;
+            }
             if (user.length() > 0) {
                 response = sendGetRequest(scheme, host, iport, path, user, pwd);
             } else {

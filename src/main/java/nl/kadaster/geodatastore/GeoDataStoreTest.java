@@ -30,9 +30,13 @@ public class GeoDataStoreTest {
         logger.info("Start tests");
 
         TestClient testClient = new TestClient();
-        testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        //testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
 
         failures += TestGetList(testClient);
+        tests++;
+
+
+        failures += TestGetList1(testClient);
         tests++;
 
         logger.info("End   tests, executed: {} with {} failures", tests, failures);
@@ -52,8 +56,8 @@ public class GeoDataStoreTest {
         logger.info("Start test: {}", testName);
 
         try {
-            CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
-            //CloseableHttpResponse response = testclient.sendRequest("http://test1:password@ngr3.geocat.net/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
+            //CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
+            CloseableHttpResponse response = testclient.sendRequest("http://test1:password@ngr3.geocat.net/geonetwork/geodatastore/api/datasets?from=1&pageSize=3&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
             //testclient.setAddRandomFile(true);
             error = evaluateResult(testName, response, 200);
         } catch (Exception e) {
@@ -61,9 +65,37 @@ public class GeoDataStoreTest {
         } finally {
             testclient.closeSession();
         }
-        logger.info("End   test: {}", testName);
+        logger.info("End   test: {} with {}", testName, ((error == 0) ? "success": "failure"));
         return error;
     }
+
+    /**
+     * Test get list of known datasets
+     *
+     *
+     * @param testclient
+     * @return
+     */
+    private int TestGetList1(final TestClient testclient) {
+        int error = 0;
+        String testName = "TestGetList";
+
+        logger.info("Start test: {}", testName);
+
+        try {
+            //CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
+            CloseableHttpResponse response = testclient.sendRequest("http://test1:password@ngr3.geocat.net/geonetwork/geodatastore/api/datasets?from=1&pageSize=30&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
+            //testclient.setAddRandomFile(true);
+            error = evaluateResult(testName, response, 200);
+        } catch (Exception e) {
+            error += 1;
+        } finally {
+            testclient.closeSession();
+        }
+        logger.info("End   test: {} with {}", testName, ((error == 0) ? "success": "failure"));
+        return error;
+    }
+
 
 
     private int evaluateResult(String testName, CloseableHttpResponse response, int statusCode) {
