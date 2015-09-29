@@ -21,7 +21,7 @@ public class App {
     private void doTests() {
         logger.info("Start tests");
 
-        TestClient tc = new TestClient();
+        TestClient03 tc = new TestClient03();
 
         failures += tc.Test01();
         tests++;

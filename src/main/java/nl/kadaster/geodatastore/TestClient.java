@@ -2,13 +2,13 @@ package nl.kadaster.geodatastore;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.ProtocolVersion;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -16,14 +16,15 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.FileEntity;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,77 +32,321 @@ import javax.net.ssl.SSLContext;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.InputStream;
 import java.net.URI;
-import java.util.Properties;
 
+/**
+ * Created by bvpelt on 9/26/15.
+ */
 public class TestClient {
-    private static String HTTPS = "https";
-
+    public static String HTTPS = "https";
+    public static String HTTPGET = "GET";
+    public static String HTTPPOST = "POST";
     private static Logger logger = LoggerFactory.getLogger(TestClient.class);
-    // Private contexts for basic authentication
-    CredentialsProvider credentialsProvider = null;
-    HttpClientContext localContext = null;
-    // The Parameters of the test site
-    private String scheme;
-    private int port;
-    private String host;
-    private String path;
+    private static int HTTPPORT = 80;
+    private static int HTTPSPORT = 443;
+
+    // Local private variable with default values
+    private HttpHost proxy = null;
+
+    // option basic authentication
+    private boolean useBasicAuthentication = false;
     private String username;
     private String password;
-    // The proxy settings (specific to company outbound internet access)
+    // Private contexts for basic authentication
+    private CredentialsProvider credentialsProvider = null;
+    private HttpClientContext localContext = null;
+    // optional proxy settings
+    private boolean useProxy = false;
     private String proxyHost;
     private int proxyPort;
+    // option to add a file
+    private boolean addRandomFile = false;
+
     // The keystore password (used for TLS connections and proxy)
-    private String keystorepwd;
-    // The connection parameters
-    private int socketTimeOut; // milliseconds
-    private int connectTimeOut; // milliseconds
-    private int requestTimeOut; // milliseconds
-    // Optional parameters
-    private boolean useProxy;
-    private boolean useBasicAuth;
-    private boolean verbose;
+    private String keystorepwd = "geodatastore";
 
-    /**
-     * Create and initialize the test client
-     */
+    // http request parameters in seconds
+    private int socketTimeOut = 1000;
+    private int connectTimeOut = 1000;
+    private int requestTimeOut = 1000;
+
+    private HttpHost target = null;
+    private CloseableHttpResponse response = null;
+
     public TestClient() {
-        // The Parameters of the test site
-        scheme = HTTPS;
-        port = 443;
-        host = "ngr3.geocat.net";
-        path = "/geonetwork/geodatastore/api/dataset";
-        username = "test1";
-        password = "password";
+        // Initialize to known values
+        proxy = null;
 
-        // The proxy settings (specific to company outbound internet access)
-        proxyHost = "www-proxy.cs.kadaster.nl";
-        proxyPort = 8082;
+        // option basic authentication
+        useBasicAuthentication = false;
+        username = "";
+        password = "";
+        // Private contexts for basic authentication
+        credentialsProvider = null;
+        localContext = null;
+        // optional proxy settings
+        useProxy = false;
+        proxyHost = null;
+        proxyPort = 0;
+        // option to add a file
+        addRandomFile = false;
 
         // The keystore password (used for TLS connections and proxy)
         keystorepwd = "geodatastore";
 
-        // The connection parameters
-        socketTimeOut = 5000; // milliseconds
-        connectTimeOut = 5000; // milliseconds
-        requestTimeOut = 5000; // milliseconds
+        // http request parameters in seconds
+        socketTimeOut = 1000;
+        connectTimeOut = 1000;
+        requestTimeOut = 1000;
 
-        // Optional parameters
-        useProxy = true;
-        useBasicAuth = true;
-        verbose = true;
-
-        // Overwrite parameters from propertie file test.properties on the classpath
-        initialize();
+        target = null;
+        response = null;
     }
 
     /**
-     * getRequestConfig based on specified parameters
+     * Setup proxy for the test client
      *
-     * @return a valid RequestConfig
+     * @param proxyHost the hostname of the proxy
+     * @param proxyPort the portnumber of the proxy
+     * @throws Exception if either hostname or proxy is not specified proxy can't be specified
      */
-    private RequestConfig getRequestConfig() {
+    public void setProxy(final String proxyHost, final int proxyPort) throws Exception {
+        if ((proxyHost == null) || (proxyHost.length() == 0) || (proxyPort == 0)) {
+            throw new Exception("Adding proxy requires a proxy hostname and a proxy port number");
+        }
+        proxy = new HttpHost(proxyHost, proxyPort);
+        useProxy = true;
+    }
+
+    /**
+     * Send the specified http request
+     *
+     * @param url    the requested url
+     * @param method the request http method (GET|POST)
+     * @return a response
+     * @throws Exception if anything failes
+     */
+    public CloseableHttpResponse sendRequest(final String url, final String method) throws Exception {
+        response = null;
+        target = null;
+
+        if (!((method.toUpperCase().equals(HTTPGET)) || (method.toUpperCase().equals(HTTPPOST)))) {
+            throw new Exception("Unknown and unsupported method in url");
+        }
+        URI uri = URI.create(url);
+
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+        String path = uri.getPath();
+        String authority = uri.getAuthority();
+        String query = uri.getQuery();
+        String fragment = uri.getFragment();
+
+        // if authority
+        // split userinfo:host:port,
+        // then split userinfo into username password
+        String user = "";
+        String pwd = "";
+        String port = "";
+        int iport = 0;
+
+        //
+        // Generic definition of authority  user:password@host:port
+        // determine if there is a "@" in the authority
+        if ((authority != null) && (authority.length() > 0)) {
+            String[] parts = authority.split("@");
+            String part1;
+
+            part1 = parts[0];
+            if (authority.contains("@")) { // username password specified (optional)
+                String[] pwdparts = parts[0].split(":");
+                user = pwdparts[0];
+                if (pwdparts.length > 1) {
+                    pwd = pwdparts[1];
+                }
+
+                if ((user == null) || (user.length() == 0) || (pwd == null) || (pwd.length() == 0)) {
+                    throw new Exception("username password expected, none specified");
+                }
+
+                if (parts.length > 1) {
+                    host = parts[1];
+                }
+                if (parts.length > 2) {
+                    port = parts[2];
+                    iport = Integer.parseInt(port);
+                } else {
+                    if (scheme.toLowerCase().equals(HTTPS)) {
+                        iport = HTTPSPORT;
+                    } else {
+                        iport = HTTPPORT;
+                    }
+                }
+            } else {
+                host = part1;
+                if (parts.length > 1) {
+                    port = parts[1];
+                    iport = Integer.parseInt(port);
+                } else {
+                    if (scheme.toLowerCase().equals(HTTPS)) {
+                        iport = HTTPSPORT;
+                    } else {
+                        iport = HTTPPORT;
+                    }
+                }
+            }
+        }
+
+        if (method.toUpperCase().equals(HTTPGET)) {
+            if (user.length() > 0) {
+                response = sendGetRequest(scheme, host, iport, path, user, pwd);
+            } else {
+                response = sendGetRequest(scheme, host, iport, path);
+            }
+        }
+
+        if (method.toUpperCase().equals(HTTPPOST)) {
+            if (user.length() > 0) {
+                response = sendPostRequest(scheme, host, iport, path, user, pwd);
+            } else {
+                response = sendPostRequest(scheme, host, iport, path);
+            }
+
+        }
+
+        return response;
+    }
+
+    public void closeSession() {
+        try {
+            if (response != null) {
+                response.close();
+                response = null;
+            }
+        } catch (Exception e) {
+            logger.error("Error closing response", e);
+        }
+    }
+
+    private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+            throw new Exception("For basic authentication username and password are required");
+        } else {
+            this.username = username;
+            this.password = password;
+            this.useBasicAuthentication = true;
+
+            target = new HttpHost(host, port, scheme);
+            createBasicAuthContext(target);
+        }
+        response = sendPostRequest(scheme, host, port, path);
+
+        return response;
+    }
+
+    private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path) {
+        CloseableHttpResponse response = null;
+        URI uri = null;
+        HttpPost httpPost = null;
+
+        try {
+            uri = getUri(scheme, host, path);
+
+            if (target == null) {
+                target = new HttpHost(host, port, scheme);
+            }
+            httpPost = (HttpPost) getMessage(uri, HTTPPOST);
+
+            CloseableHttpClient httpclient = getHttpClient(scheme);
+
+            logger.info("Sending request to: {}", httpPost.toString());
+
+            if (useBasicAuthentication) {
+                response = httpclient.execute(target, httpPost, localContext);
+            } else {
+                response = httpclient.execute(target, httpPost);
+            }
+        } catch (Exception e) {
+            logger.error("Error in sending request", e);
+        }
+        return response;
+    }
+
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+            throw new Exception("For basic authentication username and password are required");
+        } else {
+            this.username = username;
+            this.password = password;
+            this.useBasicAuthentication = true;
+
+            target = new HttpHost(host, port, scheme);
+            createBasicAuthContext(target);
+        }
+
+        response = sendGetRequest(scheme, host, port, path);
+
+        return response;
+    }
+
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path) {
+
+        URI uri = null;
+        HttpGet httpGet = null;
+
+        try {
+            uri = getUri(scheme, host, path);
+
+            if (target == null) {
+                target = new HttpHost(host, port, scheme);
+            }
+            httpGet = (HttpGet) getMessage(uri, HTTPGET);
+
+            CloseableHttpClient httpclient = getHttpClient(scheme);
+
+            logger.info("Sending request to: {}", httpGet.toString());
+
+            if (useBasicAuthentication) {
+                response = httpclient.execute(target, httpGet, localContext);
+            } else {
+                response = httpclient.execute(target, httpGet);
+            }
+        } catch (Exception e) {
+            logger.error("Error in sending request", e);
+        }
+
+        return response;
+    }
+
+    private URI getUri(final String scheme, final String host, final String path) throws Exception {
+        URI uri = null;
+
+        try {
+            uri = new URIBuilder()
+                    .setScheme(scheme)
+                    .setHost(host)
+                    .setPath(path)
+                    .build();
+        } catch (Exception e) {
+            throw new Exception("Error building uri", e);
+        }
+        return uri;
+    }
+
+    private HttpRequestBase getMessage(final URI uri, final String method) throws Exception {
+        HttpRequestBase httpRequest = null;
+
+        if (method.equals(HTTPPOST)) {
+            httpRequest = new HttpPost(uri);
+        }
+        if (method.equals(HTTPGET)) {
+            httpRequest = new HttpGet(uri);
+        }
+        if (httpRequest == null) {
+            throw new Exception("Invalid method specified. Expected GET or POST, received: " + method);
+        }
+
+        httpRequest.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
 
         RequestConfig dcNoAuth = RequestConfig.custom()
                 .setSocketTimeout(socketTimeOut)
@@ -112,111 +357,21 @@ public class TestClient {
         RequestConfig rc = RequestConfig.copy(dcNoAuth)
                 .build();
 
-        return rc;
-    }
+        httpRequest.setConfig(rc);
 
-    /**
-     * Get a parameterized http client, based on usage off https and useProxy setting
-     * <p/>
-     * Assumes a CredentialsProvider credsProvider has been created if basicAuthentication is used!
-     *
-     * @return a valid CloableHttpClient based on the scheme and useProxy setting
-     */
-    private CloseableHttpClient getHttpClient() throws Exception {
-        CloseableHttpClient httpclient = null;
-        HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+        if (addRandomFile) {
+            FileBody fileData = getFileEntity();
 
-        if (useBasicAuth) {
+            HttpEntity reqEntity = MultipartEntityBuilder.create()
+                    .addPart("dataset", fileData)
+                    .build();
 
-            if (credentialsProvider == null) {
-                throw new Exception("Expected a credentialsProvider for use with basic authentication, but not found");
+            if (httpRequest instanceof HttpPost) {
+                ((HttpPost) httpRequest).setEntity(reqEntity);
             }
         }
 
-        try {
-            logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", scheme, useProxy, useBasicAuth);
-
-            if (scheme.equals(HTTPS)) {
-                // Trust own CA and all self-signed certs
-                SSLContext sslcontext = SSLContexts.custom()
-                        .loadTrustMaterial(new File("proxykeystore.jks"), keystorepwd.toCharArray(),
-                                new TrustSelfSignedStrategy())
-                        .build();
-
-                // Allow TLSv1 protocol only
-                SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
-                        sslcontext,
-                        new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"},
-                        null,
-                        SSLConnectionSocketFactory.getDefaultHostnameVerifier());
-
-
-                // Only if scheme is https and use Proxy the certificate store should be loaded!!!
-                if (useBasicAuth) {
-
-                    if (useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setProxy(proxy)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                    if (!useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                } else {
-                    if (useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setProxy(proxy)
-                                .build();
-                    }
-
-
-                    if (!useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .build();
-                    }
-                }
-            } else {
-                // scheme not equal to HTTPS
-                if (useBasicAuth) {
-
-                    if (useProxy && useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .setProxy(proxy)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-
-                    if (!useProxy && useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                } else {
-                    if (useProxy && !useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .setProxy(proxy)
-                                .build();
-                    }
-
-                    if (!useProxy && !useBasicAuth) {
-                        httpclient = HttpClients.custom()
-                                .build();
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            logger.error("Error creating http client", e);
-        }
-
-        return httpclient;
+        return httpRequest;
     }
 
     private void createBasicAuthContext(final HttpHost target) {
@@ -239,237 +394,110 @@ public class TestClient {
     }
 
     /**
-     * executeRequest
+     * Get a parameterized http client, based on usage off https and useProxy setting
+     * <p/>
+     * Assumes a CredentialsProvider credsProvider has been created if basicAuthentication is used!
      *
-     * @param httpRequest
-     * @return Do close response on exit, but do not deassing response, it can still be read out for results
+     * @return a valid CloableHttpClient based on the scheme and useProxy setting
      */
-
-    private CloseableHttpResponse executeRequest(HttpRequestBase httpRequest) {
-        CloseableHttpResponse response = null;
-        HttpHost target = new HttpHost(host, port, scheme);
+    private CloseableHttpClient getHttpClient(final String scheme) throws Exception {
+        CloseableHttpClient httpclient = null;
 
         try {
-            // Create and fill a credentialsProvider at this place, do not move this !!1
-            if (useBasicAuth) {
-                createBasicAuthContext(target);
-            }
+            logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", scheme, useProxy, useBasicAuthentication);
 
-            CloseableHttpClient httpclient = getHttpClient();
+            if (scheme.equals(HTTPS)) {
+                // Trust own CA and all self-signed certs
+                SSLContext sslcontext = SSLContexts.custom()
+                        .loadTrustMaterial(new File("proxykeystore.jks"), keystorepwd.toCharArray(),
+                                new TrustSelfSignedStrategy())
+                        .build();
 
-            logger.info("Sending request to: {}", httpRequest.toString());
+                // Allow TLSv1 protocol only
+                SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
+                        sslcontext,
+                        new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"},
+                        null,
+                        SSLConnectionSocketFactory.getDefaultHostnameVerifier());
 
-            if (useBasicAuth) {
-                response = httpclient.execute(target, httpRequest, localContext);
-            } else {
-                response = httpclient.execute(target, httpRequest);
-            }
 
-            //response = httpclient.execute(target, httpRequest, localContext);
-            ProtocolVersion protocolVersion = response.getProtocolVersion();
-            int statusCode = response.getStatusLine().getStatusCode();
-            logger.info("Protocol version: {} status code {}", protocolVersion.toString(), Integer.toString(statusCode));
-        } catch (Exception e) {
-            logger.error("Error during execute request", e);
-        } finally {
-            try {
-                if (response != null) {
-                    response.close();
-                }
-            } catch (Exception e) {
-                logger.error("Error closing connection", e);
-            }
-        }
-        return response;
-    }
+                // Only if scheme is https and use Proxy the certificate store should be loaded!!!
+                if (useBasicAuthentication) {
 
-    private int evaluateResult(String testName, CloseableHttpResponse response, int statusCode) {
-        final String expectedProtocolVersion = "HTTP/1.1";
-        final String protocolVersion = response.getProtocolVersion().toString();
-        final int ontvangenStatusCode = response.getStatusLine().getStatusCode();
+                    if (useProxy) {
+                        httpclient = HttpClients.custom()
+                                .setSSLSocketFactory(sslsf)
+                                .setProxy(proxy)
+                                .setDefaultCredentialsProvider(credentialsProvider)
+                                .build();
+                    }
+                    if (!useProxy) {
+                        httpclient = HttpClients.custom()
+                                .setSSLSocketFactory(sslsf)
+                                .setDefaultCredentialsProvider(credentialsProvider)
+                                .build();
+                    }
+                } else {
+                    if (useProxy) {
+                        httpclient = HttpClients.custom()
+                                .setSSLSocketFactory(sslsf)
+                                .setProxy(proxy)
+                                .build();
+                    }
 
-        int result = 0;
 
-        if (response.getStatusLine().getStatusCode() != statusCode) {
-            logger.error("Test: {} - received invalid statuscode: {} expected statuscode: {}", testName, Integer.toString(ontvangenStatusCode), statusCode);
-            result++;
-        }
-
-        if (!protocolVersion.equals(expectedProtocolVersion)) {
-            logger.error("Test: {} - received invalid protocolversion: {}  expected protocolversion: {}", testName, protocolVersion, expectedProtocolVersion);
-            result++;
-        }
-
-        if (verbose) {
-            try {
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    long len = entity.getContentLength();
-                    if (len > 0 && len < 2048) {
-                        logger.info("Result: {}", EntityUtils.toString(entity));
-                    } else {
-
+                    if (!useProxy) {
+                        httpclient = HttpClients.custom()
+                                .setSSLSocketFactory(sslsf)
+                                .build();
                     }
                 }
-            } catch (Exception e) {
-                logger.error("Error while processing content", e);
-            }
-        }
-
-        return result;
-    }
-
-    // Test rest call without basic authentication http://jira.so.kadaster.nl/browse/PDOK-1649
-    //curl -v --http1.0 --proxy http://www-proxy.cs.kadaster.nl:8082  http://ngr3.geocat.net/geonetwork/geodatastore/api/dataset  -H "Accept: application/json, text/javascript, */*; q=0.01" --form name=test.txt --form dataset=@test.txt
-    public int Test01() {
-        // build request
-        HttpPost httpPost = null;
-        int result = 0;
-        String testName = "Test01";
-        CloseableHttpResponse response = null;
-
-        logger.info("Start test {}", testName);
-
-        try {
-            URI uri = new URIBuilder()
-                    .setScheme(scheme)
-                    .setHost(host)
-                    .setPath(path)
-                    .build();
-
-            httpPost = new HttpPost(uri);
-            httpPost.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-
-            FileEntity entity = getFile();
-            httpPost.setEntity(entity);
-
-            boolean orgBasicConfig = isUseBasicAuth();
-            setUseBasicAuth(false);
-            logger.info("Explicitly set basic authentication off");
-
-            // do not use basic authentication!!
-            httpPost.setConfig(getRequestConfig());
-
-            // execute erquest
-
-            response = executeRequest(httpPost);
-
-            // evaludate result
-            result = evaluateResult(testName, response, 401);
-
-            setUseBasicAuth(orgBasicConfig);
-
-            if (result == 0) {
-                logger.info("Test: {}  succeeded", testName);
             } else {
-                logger.error("Test: {}  failed on {}", testName, Integer.toString(result));
-            }
-        } catch (Exception e) {
-            logger.error("Error building request", e);
-        }
-        logger.info("End   test {}", testName);
+                // scheme not equal to HTTPS, assumes http!!!!
+                if (useBasicAuthentication) {
 
-        return result;
+                    if (useProxy && useBasicAuthentication) {
+                        httpclient = HttpClients.custom()
+                                .setProxy(proxy)
+                                .setDefaultCredentialsProvider(credentialsProvider)
+                                .build();
+                    }
+
+                    if (!useProxy && useBasicAuthentication) {
+                        httpclient = HttpClients.custom()
+                                .setDefaultCredentialsProvider(credentialsProvider)
+                                .build();
+                    }
+                } else {
+                    if (useProxy && !useBasicAuthentication) {
+                        httpclient = HttpClients.custom()
+                                .setProxy(proxy)
+                                .build();
+                    }
+
+                    if (!useProxy && !useBasicAuthentication) {
+                        httpclient = HttpClients.custom()
+                                .build();
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Error creating http client", e);
+        }
+
+        return httpclient;
     }
 
-    // Test rest call ophalen codelist http://jira.so.kadaster.nl/browse/PDOK-1659
-    // $ curl -v --http1.1 -X GET --proxy http://www-proxy.cs.kadaster.nl:8082 --user test1:password http://ngr3.geocat.net/geonetwork/geodatastore/registry  -H "Accept: application/json, text/javascript, */*; q=0.01"
-    public int Test02() {
-        // build request
-        HttpPost httpPost = null;
-        int result = 0;
-        String testName = "Test02";
-        CloseableHttpResponse response = null;
-
-        logger.info("Start test {}", testName);
-
-        try {
-            String path = "/geonetwork/geodatastore/registry";
-
-            URI uri = new URIBuilder()
-                    .setScheme(scheme)
-                    .setHost(host)
-                    .setPath(path)
-                    .build();
-
-            httpPost = new HttpPost(uri);
-            httpPost.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-
-            // Request configuration can be overridden at the request level.
-            // They will take precedence over the one set at the client level.
-            httpPost.setConfig(getRequestConfig());
-
-            FileEntity entity = getFile();
-            httpPost.setEntity(entity);
-
-            // execute erquest
-            response = executeRequest(httpPost);
-
-            // evaludate result
-            result = evaluateResult(testName, response, 200);
-
-            if (result == 0) {
-                logger.info("Test: {}  succeeded", testName);
-            } else {
-                logger.error("Test: {}  failed on {}", testName, Integer.toString(result));
-            }
-        } catch (Exception e) {
-            logger.error("Error building request", e);
-        }
-        logger.info("End   test {}", testName);
-
-        return result;
-    }
-
-
-    // Test rest call ophalen codelist http://jira.so.kadaster.nl/browse/PDOK-1648
-    // curl -v --http1.0 --proxy http://www-proxy.cs.kadaster.nl:8082 --user test1:password1234 http://ngr3.geocat.net/geonetwork/geodatastore/api/dataset  -H "Accept: application/json, text/javascript, */*; q=0.01" --form name=test.txt --form dataset=@test.txt
-    public int Test03() {
-        // build request
-        HttpPost httpPost = null;
-        int result = 0;
-        String testName = "Test03";
-        CloseableHttpResponse response = null;
-
-        logger.info("Start test {}", testName);
-
-        try {
-            URI uri = new URIBuilder()
-                    .setScheme(scheme)
-                    .setHost(host)
-                    .setPath(path)
-                    .build();
-
-            httpPost = new HttpPost(uri);
-            httpPost.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-
-            FileEntity entity = getFile();
-            httpPost.setEntity(entity);
-
-            httpPost.setConfig(getRequestConfig());
-
-            // execute erquest
-            response = executeRequest(httpPost);
-
-            // evaludate result
-            result = evaluateResult("Test03", response, 200);
-            if (result == 0) {
-                logger.info("Test: {}  succeeded", testName);
-            } else {
-                logger.error("Test: {}  failed on {}", testName, Integer.toString(result));
-            }
-        } catch (Exception e) {
-            logger.error("Error building request", e);
-        }
-        logger.info("End   test {}", testName);
-
-        return result;
-    }
-
-    private FileEntity getFile() {
+    /**
+     * Add dummy file
+     *
+     * @return
+     */
+    private FileBody getFileEntity() {
         String testFile = "somefile.txt";
         File file = new File(testFile);
-        FileEntity entity = null;
+        FileBody entity = null;
 
         try {
             // if file doesnt exists, then create it
@@ -483,253 +511,50 @@ public class TestClient {
             bw.write(content);
             bw.close();
 
-            entity = new FileEntity(file,
-                    ContentType.create("text/plain", "UTF-8"));
         } catch (Exception e) {
             logger.error("Couldnot create file: {}", testFile, e);
         }
 
+        entity = new FileBody(new File(testFile));
+
         return entity;
     }
 
-    private int getIntParameter(final Properties p, final String paramName, final int def) {
-        String s;
-        int i;
-        int result = def;
-
-        s = p.getProperty(paramName);
-        if (s != null) {
-            try {
-                i = Integer.parseInt(s);
-                if (i != 0) {
-                    result = i;
-                }
-            } catch (NumberFormatException e) {
-                logger.warn("Error parsing parameter {}: {}, using the default value: {}", paramName, s, def);
-            }
-        }
-        return result;
-    }
-
-    private String getStringProperty(final Properties p, final String name, final String def) {
-        String s = null;
-        s = p.getProperty(name);
-        if ((s == null) || (s.length() == 0)) {
-            s = def;
-        }
-        return s;
-    }
-
     /**
-     * Check if config is valid
-     * If not throw exception, going on is useless
+     * Add an existing file
      *
-     * @throws Exception
+     * @param name
+     * @return
      */
-    private void checkConfig() throws Exception {
-        boolean errorOccured = false;
+    private FileEntity getFileEntity(final String name) throws Exception {
 
-        if (useProxy) {
-            // make sure proxyhost and proxyport have a value
-            if (((proxyHost == null) || (proxyHost.length() == 0)) || (proxyPort == 0)) {
-                logger.error("Inconsistency in configuration, useProxy: {} but proxyHost: {} and proxyPort: {}", useProxy, proxyHost, proxyPort);
-                errorOccured = true;
-            }
+        File file = new File(name);
+        FileEntity entity = null;
+
+        // if file doesnt exists, then create it
+        if (!file.exists()) {
+            throw new Exception("Try to add file, but it cannot be found or doesnot exist");
         }
 
-        if (useBasicAuth) {
-            if (((password == null) || (password.length() == 0)) || ((username == null) || (username.length() == 0))) {
-                logger.error("Inconsistency in configuration, useBasicAuth: {} but username: {} and password: {}", useBasicAuth, username, password);
-                errorOccured = true;
-            }
-        }
+        entity = new FileEntity(file, ContentType.create("text/plain", "UTF-8"));
 
-        if ((scheme.equals(HTTPS) || (port == 443)) && ((keystorepwd == null) || (keystorepwd.length() == 0))) { // expect ssl
-            logger.error("Inconsistency in configuration, expected keystore password, but none known");
-            errorOccured = true;
-        }
 
-        if (errorOccured) {
-            throw new Error("The configuration is invalid, during checking an error occured, fix configuration");
-        }
+        return entity;
     }
 
-    /**
-     * Read the properties file to overwrite the internal parameters
-     * After reading the configuration file check the current configuration
-     */
-    private void initialize() {
-        // overwrite values based on property file
-        Properties p = null;
-
-        try {
-            p = loadProperties();
-
-            String s;
-            int i;
-            boolean b;
-
-            // scheme
-            scheme = getStringProperty(p, "scheme", scheme);
-
-            // port
-            port = getIntParameter(p, "port", port);
-
-            // host
-            host = getStringProperty(p, "host", host);
-
-            // path
-            path = getStringProperty(p, "path", path);
-
-            // username
-            username = getStringProperty(p, "username", username);
-
-            // proxyHost = null;
-            proxyHost = getStringProperty(p, "proxyHost", proxyHost);
-
-            // proxyPort = 0;
-            proxyPort = getIntParameter(p, "proxyPort", proxyPort);
-
-            // The keystore password (used for TLS connections and proxy)
-            // keystorepwd = null;
-            keystorepwd = getStringProperty(p, "keystorepwd", keystorepwd);
-
-            // The connection parameters
-            // socketTimeOut = 0;
-            socketTimeOut = getIntParameter(p, "socketTimeOut", socketTimeOut);
-
-            // connectTimeOut = 0;
-            connectTimeOut = getIntParameter(p, "connectTimeOut", connectTimeOut);
-
-            // requestTimeOut = 0;
-            requestTimeOut = getIntParameter(p, "requestTimeOut", requestTimeOut);
-
-            // Optional parameters
-            // useProxy = true;
-            s = p.getProperty("useProxy");
-            if (s != null) {
-                b = Boolean.parseBoolean(s);
-                useProxy = b;
-            }
-            // useBasicAuth = true;
-            s = p.getProperty("useBasicAuth");
-            if (s != null) {
-                b = Boolean.parseBoolean(s);
-                useBasicAuth = b;
-            }
-            // verbose = true;
-            s = p.getProperty("verbose");
-            if (s != null) {
-                b = Boolean.parseBoolean(s);
-                verbose = b;
-            }
-
-            checkConfig();
-
-        } catch (Exception e) {
-            logger.error("Problem loading properties", e);
-        }
+    public boolean isAddRandomFile() {
+        return addRandomFile;
     }
 
-
-    public Properties loadProperties() throws Exception {
-        Properties properties = null;
-        InputStream stream = null;
-        try {
-            properties = new Properties();
-            stream = TestClient.class.getClassLoader().getResourceAsStream("test.properties");
-            properties.load(stream);
-        } catch (Exception e) {
-            throw e;
-        } finally {
-            try {
-                if (stream != null) {
-                    stream.close();
-                }
-            } catch (Exception e) {
-                logger.error("Error closing stream", e);
-            }
-        }
-        return properties;
-    }
-
-    public String getScheme() {
-        return scheme;
-    }
-
-    public void setScheme(final String scheme) {
-        this.scheme = scheme;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(final String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(final int port) {
-        this.port = port;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(final String path) {
-        this.path = path;
-    }
-
-    public String getProxyHost() {
-        return proxyHost;
-    }
-
-    public void setProxyHost(final String proxyHost) {
-        this.proxyHost = proxyHost;
-    }
-
-    public int getProxyPort() {
-        return proxyPort;
-    }
-
-    public void setProxyPort(final int proxyPort) {
-        this.proxyPort = proxyPort;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(final String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(final String password) {
-        this.password = password;
-    }
-
-    public String getKeystorepwd() {
-        return keystorepwd;
-    }
-
-    public void setKeystorepwd(final String keystorepwd) {
-        this.keystorepwd = keystorepwd;
+    public void setAddRandomFile(boolean addRandomFile) {
+        this.addRandomFile = addRandomFile;
     }
 
     public int getSocketTimeOut() {
         return socketTimeOut;
     }
 
-    public void setSocketTimeOut(final int socketTimeOut) {
+    public void setSocketTimeOut(int socketTimeOut) {
         this.socketTimeOut = socketTimeOut;
     }
 
@@ -737,7 +562,7 @@ public class TestClient {
         return connectTimeOut;
     }
 
-    public void setConnectTimeOut(final int connectTimeOut) {
+    public void setConnectTimeOut(int connectTimeOut) {
         this.connectTimeOut = connectTimeOut;
     }
 
@@ -745,31 +570,31 @@ public class TestClient {
         return requestTimeOut;
     }
 
-    public void setRequestTimeOut(final int requestTimeOut) {
+    public void setRequestTimeOut(int requestTimeOut) {
         this.requestTimeOut = requestTimeOut;
     }
 
-    public boolean isUseProxy() {
-        return useProxy;
+    public int getProxyPort() {
+        return proxyPort;
     }
 
-    public void setUseProxy(final boolean useProxy) {
-        this.useProxy = useProxy;
+    public void setProxyPort(int proxyPort) {
+        this.proxyPort = proxyPort;
     }
 
-    public boolean isUseBasicAuth() {
-        return useBasicAuth;
+    public String getProxyHost() {
+        return proxyHost;
     }
 
-    public void setUseBasicAuth(final boolean useBasicAuth) {
-        this.useBasicAuth = useBasicAuth;
+    public void setProxyHost(String proxyHost) {
+        this.proxyHost = proxyHost;
     }
 
-    public boolean isVerbose() {
-        return verbose;
+    public boolean isUseBasicAuthentication() {
+        return useBasicAuthentication;
     }
 
-    public void setVerbose(final boolean verbose) {
-        this.verbose = verbose;
+    public void setUseBasicAuthentication(boolean useBasicAuthentication) {
+        this.useBasicAuthentication = useBasicAuthentication;
     }
 }

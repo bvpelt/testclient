@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Hello world!
  */
-public class App01 {
-    private static Logger logger = LoggerFactory.getLogger(App01.class);
+public class GeoDataStoreTest {
+    private static Logger logger = LoggerFactory.getLogger(GeoDataStoreTest.class);
     private int failures = 0;
     private int tests = 0;
     private boolean verbose = true;
@@ -18,7 +18,7 @@ public class App01 {
     public static void main(String[] args) {
 
         try {
-            App01 app = new App01();
+            GeoDataStoreTest app = new GeoDataStoreTest();
 
             app.doTests();
         } catch (Exception e) {
@@ -32,61 +32,29 @@ public class App01 {
         TestClient testClient = new TestClient();
         testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
 
-        failures += Test01(testClient);
-        tests++;
-
-        failures += Test02(testClient);
-        tests++;
-
-        failures += Test03(testClient);
+        failures += TestGetList(testClient);
         tests++;
 
         logger.info("End   tests, executed: {} with {} failures", tests, failures);
     }
 
-    private int Test01(final TestClient testclient) {
+    /**
+     * Test get list of known datasets
+     *
+     *
+     * @param testclient
+     * @return
+     */
+    private int TestGetList(final TestClient testclient) {
         int error = 0;
-        String testName = "Test01";
+        String testName = "TestGetList";
 
         logger.info("Start test: {}", testName);
 
         try {
-            CloseableHttpResponse response = testclient.sendRequest("https://test.geodatastore.pdok.nl/geonetwork/geodatastore/api/dataset", TestClient.HTTPPOST);
-            error = evaluateResult(testName, response, 401);
-        } catch (Exception e) {
-            error += 1;
-        } finally {
-            testclient.closeSession();
-        }
-        logger.info("End   test: {}", testName);
-        return error;
-    }
-
-    private int Test02(final TestClient testclient) {
-        int error = 0;
-        String testName = "Test02";
-
-        logger.info("Start test: {}", testName);
-        try {
-            CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/dataset", TestClient.HTTPPOST);
-            error = evaluateResult(testName, response, 200);
-        } catch (Exception e) {
-            error += 1;
-        } finally {
-            testclient.closeSession();
-        }
-        logger.info("End   test: {}", testName);
-        return error;
-    }
-
-    private int Test03(final TestClient testclient) {
-        int error = 0;
-        String testName = "Test03";
-
-        logger.info("Start test: {}", testName);
-        testclient.setUseBasicAuthentication(false);
-        try {
-            CloseableHttpResponse response = testclient.sendRequest("http://www.nu.nl/", TestClient.HTTPGET);
+            CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
+            //CloseableHttpResponse response = testclient.sendRequest("http://test1:password@ngr3.geocat.net/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
+            //testclient.setAddRandomFile(true);
             error = evaluateResult(testName, response, 200);
         } catch (Exception e) {
             error += 1;
