@@ -16,8 +16,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.FileEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
@@ -38,10 +38,13 @@ import java.net.URI;
  * Created by bvpelt on 9/26/15.
  */
 public class TestClient {
+    // Public accessable constants
     public static String HTTPS = "https";
     public static String HTTPGET = "GET";
     public static String HTTPPOST = "POST";
+    // Logger initialization
     private static Logger logger = LoggerFactory.getLogger(TestClient.class);
+    // Internal constants
     private static int HTTPPORT = 80;
     private static int HTTPSPORT = 443;
 
