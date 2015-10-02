@@ -13,6 +13,9 @@ for usefull documentation about using branches/merges in git.
 ## Slf4J
 [Documentation](http://www.slf4j.org/manual.html)
 
+## Json
+See [Json](http://www.mkyong.com/java/how-to-enable-pretty-print-json-output-jackson/)
+
 ## SSL connection
 Import certificates into keystore proxykeystore.jks
 Make sure the proxykeystore.jks is at the root of the class path (for now )

@@ -7,18 +7,15 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.*;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -33,6 +30,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Created by bvpelt on 9/26/15.
@@ -42,6 +42,8 @@ public class TestClient {
     public static String HTTPS = "https";
     public static String HTTPGET = "GET";
     public static String HTTPPOST = "POST";
+    public static String HTTPDELETE = "DELETE";
+
     // Logger initialization
     private static Logger logger = LoggerFactory.getLogger(TestClient.class);
     // Internal constants
@@ -55,6 +57,8 @@ public class TestClient {
     private boolean useBasicAuthentication = false;
     private String username;
     private String password;
+    // map with http headers
+    private HashMap<String, String> headers = null;
     // Private contexts for basic authentication
     private CredentialsProvider credentialsProvider = null;
     private HttpClientContext localContext = null;
@@ -64,6 +68,12 @@ public class TestClient {
     private int proxyPort;
     // option to add a file
     private boolean addRandomFile = false;
+    private boolean addFile = false;
+    private FileBody fileEntity;
+
+    // option publish
+    private Boolean publish = null;
+    private StringBody pubEntity;
 
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd = "geodatastore";
@@ -91,6 +101,8 @@ public class TestClient {
         useProxy = false;
         proxyHost = null;
         proxyPort = 0;
+        // optional number of headers
+        headers = null;
         // option to add a file
         addRandomFile = false;
 
@@ -121,6 +133,19 @@ public class TestClient {
         useProxy = true;
     }
 
+    public void addHeader(final String key, final String value) {
+        if (null == headers ) {
+            headers = new HashMap<String, String> ();
+        }
+        String curValue = headers.get(key);
+
+        if ((curValue != null) && (curValue.length() > 0) ) {
+            logger.error("Header with name: {} - value: {} already found new value: {}", key, curValue, value);
+        }
+
+        headers.put(key, value);
+    }
+
     /**
      * Send the specified http request
      *
@@ -133,91 +158,113 @@ public class TestClient {
         response = null;
         target = null;
 
-        if (!((method.toUpperCase().equals(HTTPGET)) || (method.toUpperCase().equals(HTTPPOST)))) {
-            throw new Exception("Unknown and unsupported method in url");
-        }
-        URI uri = URI.create(url);
+        try {
+            if (!((method.toUpperCase().equals(HTTPGET)) || (method.toUpperCase().equals(HTTPPOST) || (method.toUpperCase().equals(HTTPDELETE))))) {
+                throw new Exception("Unknown and unsupported method in url");
+            }
+            URI uri = URI.create(url);
 
-        String scheme = uri.getScheme();
-        String host = uri.getHost();
-        String path = uri.getPath();
-        String authority = uri.getAuthority();
-        String query = uri.getQuery();
-        String fragment = uri.getFragment();
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            String path = uri.getPath();
+            String authority = uri.getAuthority();
+            String query = uri.getQuery();
+            String fragment = uri.getFragment();
 
-        // if authority
-        // split userinfo:host:port,
-        // then split userinfo into username password
-        String user = "";
-        String pwd = "";
-        String port = "";
-        int iport = 0;
+            // if authority
+            // split userinfo:host:port,
+            // then split userinfo into username password
+            String user = "";
+            String pwd = "";
+            String port = "";
+            int iport = 0;
 
-        //
-        // Generic definition of authority  user:password@host:port
-        // determine if there is a "@" in the authority
-        if ((authority != null) && (authority.length() > 0)) {
-            String[] parts = authority.split("@");
-            String part1;
+            //
+            // Generic definition of authority  user:password@host:port
+            // determine if there is a "@" in the authority
+            if ((authority != null) && (authority.length() > 0)) {
+                String[] parts = authority.split("@");
+                String part1;
 
-            part1 = parts[0];
-            if (authority.contains("@")) { // username password specified (optional)
-                String[] pwdparts = parts[0].split(":");
-                user = pwdparts[0];
-                if (pwdparts.length > 1) {
-                    pwd = pwdparts[1];
-                }
+                part1 = parts[0];
+                if (authority.contains("@")) { // username password specified (optional)
+                    String[] pwdparts = parts[0].split(":");
+                    user = pwdparts[0];
+                    if (pwdparts.length > 1) {
+                        pwd = pwdparts[1];
+                    }
 
-                if ((user == null) || (user.length() == 0) || (pwd == null) || (pwd.length() == 0)) {
-                    throw new Exception("username password expected, none specified");
-                }
+                    if ((user == null) || (user.length() == 0) || (pwd == null) || (pwd.length() == 0)) {
+                        throw new Exception("username password expected, none specified");
+                    }
 
-                if (parts.length > 1) {
-                    host = parts[1];
-                }
-                if (parts.length > 2) {
-                    port = parts[2];
-                    iport = Integer.parseInt(port);
-                } else {
-                    if (scheme.toLowerCase().equals(HTTPS)) {
-                        iport = HTTPSPORT;
+                    if (parts.length > 1) {
+                        host = parts[1];
+                    }
+                    if (parts.length > 2) {
+                        port = parts[2];
+                        iport = Integer.parseInt(port);
                     } else {
-                        iport = HTTPPORT;
+                        if (scheme.toLowerCase().equals(HTTPS)) {
+                            iport = HTTPSPORT;
+                        } else {
+                            iport = HTTPPORT;
+                        }
+                    }
+                } else {
+                    host = part1;
+                    if (parts.length > 1) {
+                        port = parts[1];
+                        iport = Integer.parseInt(port);
+                    } else {
+                        if (scheme.toLowerCase().equals(HTTPS)) {
+                            iport = HTTPSPORT;
+                        } else {
+                            iport = HTTPPORT;
+                        }
                     }
                 }
-            } else {
-                host = part1;
-                if (parts.length > 1) {
-                    port = parts[1];
-                    iport = Integer.parseInt(port);
+            }
+
+            if (method.toUpperCase().equals(HTTPGET)) {
+                if ((query != null) && (query.length() > 0)) {
+                    path += "?" + query;
+                }
+                if (user.length() > 0) {
+                    response = sendGetRequest(scheme, host, iport, path, user, pwd);
                 } else {
-                    if (scheme.toLowerCase().equals(HTTPS)) {
-                        iport = HTTPSPORT;
-                    } else {
-                        iport = HTTPPORT;
-                    }
+                    response = sendGetRequest(scheme, host, iport, path);
                 }
             }
-        }
 
-        if (method.toUpperCase().equals(HTTPGET)) {
-            if (query.length() > 0) {
-                path += "?" + query;
-            }
-            if (user.length() > 0) {
-                response = sendGetRequest(scheme, host, iport, path, user, pwd);
-            } else {
-                response = sendGetRequest(scheme, host, iport, path);
-            }
-        }
+            if (method.toUpperCase().equals(HTTPPOST)) {
+                if (user.length() > 0) {
+                    response = sendPostRequest(scheme, host, iport, path, user, pwd);
+                } else {
+                    response = sendPostRequest(scheme, host, iport, path);
+                }
 
-        if (method.toUpperCase().equals(HTTPPOST)) {
-            if (user.length() > 0) {
-                response = sendPostRequest(scheme, host, iport, path, user, pwd);
-            } else {
-                response = sendPostRequest(scheme, host, iport, path);
             }
 
+            if (method.toUpperCase().equals(HTTPDELETE)) {
+                if (user.length() > 0) {
+                    response = sendDeleteRequest(scheme, host, iport, path, user, pwd);
+                } else {
+                    response = sendDeleteRequest(scheme, host, iport, path);
+                }
+
+            }
+        } catch (Exception e) {
+            throw new Exception("Error during send message", e);
+        } finally {
+            // reset local variables
+            target = null;
+            addFile = false;
+            addRandomFile = false;
+            fileEntity = null;
+            headers = null;
+            publish = null;
+            pubEntity = null;
         }
 
         return response;
@@ -235,18 +282,30 @@ public class TestClient {
     }
 
     private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
-        if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
-            throw new Exception("For basic authentication username and password are required");
-        } else {
-            this.username = username;
-            this.password = password;
-            this.useBasicAuthentication = true;
+        try {
+            if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+                throw new Exception("For basic authentication username and password are required");
+            } else {
+                this.username = username;
+                this.password = password;
+                this.useBasicAuthentication = true;
 
-            target = new HttpHost(host, port, scheme);
-            createBasicAuthContext(target);
+                target = new HttpHost(host, port, scheme);
+                createBasicAuthContext(target);
+            }
+            response = sendPostRequest(scheme, host, port, path);
+        } catch (Exception e) {
+            // reset values
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+
+            throw new Exception("Error send delete request with authentication", e);
+        } finally {
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
         }
-        response = sendPostRequest(scheme, host, port, path);
-
         return response;
     }
 
@@ -278,20 +337,92 @@ public class TestClient {
         return response;
     }
 
-    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
-        if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
-            throw new Exception("For basic authentication username and password are required");
-        } else {
-            this.username = username;
-            this.password = password;
-            this.useBasicAuthentication = true;
+    private CloseableHttpResponse sendDeleteRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        try {
+            if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+                throw new Exception("For basic authentication username and password are required");
+            } else {
+                this.username = username;
+                this.password = password;
+                this.useBasicAuthentication = true;
 
-            target = new HttpHost(host, port, scheme);
-            createBasicAuthContext(target);
+                target = new HttpHost(host, port, scheme);
+                createBasicAuthContext(target);
+            }
+
+            response = sendDeleteRequest(scheme, host, port, path);
+
+        } catch (Exception e) {
+            // reset values
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+
+            throw new Exception("Error send delete request with authentication", e);
+        } finally {
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
         }
+        return response;
+    }
 
-        response = sendGetRequest(scheme, host, port, path);
+    private CloseableHttpResponse sendDeleteRequest(final String scheme, final String host, final int port, final String path) {
+        CloseableHttpResponse response = null;
+        URI uri = null;
+        HttpDelete httpDelete = null;
 
+        try {
+            uri = getUri(scheme, host, path);
+
+            if (target == null) {
+                target = new HttpHost(host, port, scheme);
+            }
+            httpDelete = (HttpDelete) getMessage(uri, HTTPDELETE);
+
+            CloseableHttpClient httpclient = getHttpClient(scheme);
+
+            logger.info("Sending request to: {}", httpDelete.toString());
+
+            if (useBasicAuthentication) {
+                response = httpclient.execute(target, httpDelete, localContext);
+            } else {
+                response = httpclient.execute(target, httpDelete);
+            }
+        } catch (Exception e) {
+            logger.error("Error in sending request", e);
+        }
+        return response;
+    }
+
+
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        try {
+            if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+                throw new Exception("For basic authentication username and password are required");
+            } else {
+                this.username = username;
+                this.password = password;
+                this.useBasicAuthentication = true;
+
+                target = new HttpHost(host, port, scheme);
+                createBasicAuthContext(target);
+            }
+
+            response = sendGetRequest(scheme, host, port, path);
+            
+        } catch (Exception e) {
+            // reset values
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+
+            throw new Exception("Error send get request with authentication", e);
+        } finally {
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+        }
         return response;
     }
 
@@ -345,6 +476,9 @@ public class TestClient {
         if (method.equals(HTTPPOST)) {
             httpRequest = new HttpPost(uri);
         }
+        if (method.equals(HTTPDELETE)) {
+            httpRequest = new HttpDelete(uri);
+        }
         if (method.equals(HTTPGET)) {
             httpRequest = new HttpGet(uri);
         }
@@ -352,7 +486,17 @@ public class TestClient {
             throw new Exception("Invalid method specified. Expected GET or POST, received: " + method);
         }
 
-        httpRequest.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+        // httpRequest.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+        if (headers != null) {
+            Set<String> keys = headers.keySet();
+            Iterator<String> it = keys.iterator();
+            while (it.hasNext()) {
+                String key = it.next();
+                String value = headers.get(key);
+                logger.info("Adding header {}:, {}", key, value);
+                httpRequest.addHeader(key, value);
+            }
+        }
 
         RequestConfig dcNoAuth = RequestConfig.custom()
                 .setSocketTimeout(socketTimeOut)
@@ -368,9 +512,35 @@ public class TestClient {
         if (addRandomFile) {
             FileBody fileData = getFileEntity();
 
-            HttpEntity reqEntity = MultipartEntityBuilder.create()
+            HttpEntity reqEntity = null;
+
+            if (publish != null) {
+            reqEntity = MultipartEntityBuilder.create()
                     .addPart("dataset", fileData)
+                    .addPart("publish", pubEntity)
                     .build();
+            } else {
+                reqEntity = MultipartEntityBuilder.create()
+                        .addPart("dataset", fileData)
+                        .build();
+            }
+
+            if (httpRequest instanceof HttpPost) {
+                ((HttpPost) httpRequest).setEntity(reqEntity);
+            }
+        } else if (addFile) {
+            HttpEntity reqEntity = null;
+
+            if (publish != null) {
+                reqEntity = MultipartEntityBuilder.create()
+                        .addPart("metadata", fileEntity)
+                        .addPart("publish", pubEntity)
+                        .build();
+            } else {
+                reqEntity = MultipartEntityBuilder.create()
+                        .addPart("metadata", fileEntity)
+                        .build();
+            }
 
             if (httpRequest instanceof HttpPost) {
                 ((HttpPost) httpRequest).setEntity(reqEntity);
@@ -495,6 +665,12 @@ public class TestClient {
         return httpclient;
     }
 
+    private StringBody getPublishedEntity() {
+        pubEntity = new StringBody(getPublish().toString(), ContentType.TEXT_PLAIN);
+
+        return pubEntity;
+    }
+
     /**
      * Add dummy file
      *
@@ -536,7 +712,7 @@ public class TestClient {
      * @param name
      * @return
      */
-    private FileBody getFileEntity(final String name) throws Exception {
+    public FileBody getFileEntity(final String name) throws Exception {
 
         File file = new File(name);
         FileBody entity = null;
@@ -547,9 +723,12 @@ public class TestClient {
         }
 
         entity = new FileBody(new File(name));
+        fileEntity = entity;
+        addFile = true;
 
         return entity;
     }
+
 
     public boolean isAddRandomFile() {
         return addRandomFile;
@@ -605,5 +784,23 @@ public class TestClient {
 
     public void setUseBasicAuthentication(boolean useBasicAuthentication) {
         this.useBasicAuthentication = useBasicAuthentication;
+    }
+
+    public boolean isAddFile() {
+        return addFile;
+    }
+
+    public void setAddFile(boolean addFile) {
+        this.addFile = addFile;
+    }
+
+
+    public Boolean getPublish() {
+        return publish;
+    }
+
+    public void setPublish(Boolean publish) {
+        this.publish = new Boolean(publish);
+        getPublishedEntity();
     }
 }
