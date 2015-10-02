@@ -14,6 +14,7 @@ public class GeoDataStoreTest {
     private int failures = 0;
     private int tests = 0;
     private boolean verbose = true;
+    private StringBuffer resultText = null;
 
     public static void main(String[] args) {
 
@@ -30,7 +31,7 @@ public class GeoDataStoreTest {
         logger.info("Start tests");
 
         TestClient testClient = new TestClient();
-        //testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
 
         /*
         failures += TestGetList(testClient);
@@ -40,7 +41,7 @@ public class GeoDataStoreTest {
         failures += TestGetList1(testClient);
         tests++;
 */
-        failures += TestGetList2(testClient);
+        failures += TestPost01(testClient);
         tests++;
 
         logger.info("End   tests, executed: {} with {} failures", tests, failures);
@@ -104,16 +105,16 @@ public class GeoDataStoreTest {
      * @param testclient
      * @return
      */
-    private int TestGetList2(final TestClient testclient) {
+    private int TestPost01(final TestClient testclient) {
         int error = 0;
-        String testName = "TestGetList";
+        String testName = "TestPost01";
 
         logger.info("Start test: {}", testName);
 
         try {
             testclient.setAddRandomFile(true);
-            //CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/datasets?from=1&pageSize=8&sortBy=changeDate&sortOrder=desc&status=draft", TestClient.HTTPGET);
-            CloseableHttpResponse response = testclient.sendRequest("http://test1:password@ngr3.geocat.net/geonetwork/geodatastore/api/dataset", TestClient.HTTPPOST);
+            CloseableHttpResponse response = testclient.sendRequest("https://WPM:testtest@test.geodatastore.pdok.nl/geonetwork/geodatastore/api/dataset", TestClient.HTTPPOST);
+            //CloseableHttpResponse response = testclient.sendRequest("http://test1:password@ngr3.geocat.net/geonetwork/geodatastore/api/dataset", TestClient.HTTPPOST);
             testclient.setAddRandomFile(false);
             error = evaluateResult(testName, response, 200);
         } catch (Exception e) {
@@ -150,6 +151,7 @@ public class GeoDataStoreTest {
                 entity = response.getEntity();
                 if (entity != null) {
                     String content = EntityUtils.toString(entity);
+                    resultText = new StringBuffer(content);
                     logger.info("Result size: {}, content: {}", content.length(), content);
                 }
             } catch (Exception e) {

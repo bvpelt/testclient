@@ -28,4 +28,8 @@ public class JsonConverter {
             logger.error("Error parsing json string {}", input, e);
         }
     }
+
+    public JsonNode getNode() {
+        return this.node;
+    }
 }

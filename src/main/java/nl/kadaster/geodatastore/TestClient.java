@@ -69,9 +69,9 @@ public class TestClient {
     private String keystorepwd = "geodatastore";
 
     // http request parameters in seconds
-    private int socketTimeOut = 1000;
-    private int connectTimeOut = 1000;
-    private int requestTimeOut = 1000;
+    private int socketTimeOut = 5000;
+    private int connectTimeOut = 5000;
+    private int requestTimeOut = 5000;
 
     private HttpHost target = null;
     private CloseableHttpResponse response = null;
@@ -98,9 +98,9 @@ public class TestClient {
         keystorepwd = "geodatastore";
 
         // http request parameters in seconds
-        socketTimeOut = 1000;
-        connectTimeOut = 1000;
-        requestTimeOut = 1000;
+        socketTimeOut = 5000;
+        connectTimeOut = 5000;
+        requestTimeOut = 5000;
 
         target = null;
         response = null;
@@ -501,10 +501,17 @@ public class TestClient {
      * @return
      */
     private FileBody getFileEntity() {
+
+        FileBody entity = null;
+        File genFile = getNewFile();
+        entity = new FileBody(genFile);
+
+        return entity;
+    }
+
+    private File getNewFile() {
         String testFile = "somefile.txt";
         File file = new File(testFile);
-        FileBody entity = null;
-
         try {
             // if file doesnt exists, then create it
             if (!file.exists()) {
@@ -520,10 +527,7 @@ public class TestClient {
         } catch (Exception e) {
             logger.error("Couldnot create file: {}", testFile, e);
         }
-
-        entity = new FileBody(new File(testFile));
-
-        return entity;
+        return file;
     }
 
     /**
@@ -532,18 +536,17 @@ public class TestClient {
      * @param name
      * @return
      */
-    private FileEntity getFileEntity(final String name) throws Exception {
+    private FileBody getFileEntity(final String name) throws Exception {
 
         File file = new File(name);
-        FileEntity entity = null;
+        FileBody entity = null;
 
         // if file doesnt exists, then create it
         if (!file.exists()) {
             throw new Exception("Try to add file, but it cannot be found or doesnot exist");
         }
 
-        entity = new FileEntity(file, ContentType.create("text/plain", "UTF-8"));
-
+        entity = new FileBody(new File(name));
 
         return entity;
     }
