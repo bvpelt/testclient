@@ -37,7 +37,7 @@ import java.util.Set;
 /**
  * Created by bvpelt on 9/26/15.
  */
-public class TestClient {
+public class TestClient04 {
     // Public accessable constants
     public static String HTTPS = "https";
     public static String HTTPGET = "GET";
@@ -45,7 +45,7 @@ public class TestClient {
     public static String HTTPDELETE = "DELETE";
 
     // Logger initialization
-    private static Logger logger = LoggerFactory.getLogger(TestClient.class);
+    private static Logger logger = LoggerFactory.getLogger(TestClient04.class);
     // Internal constants
     private static int HTTPPORT = 80;
     private static int HTTPSPORT = 443;
@@ -86,7 +86,7 @@ public class TestClient {
     private HttpHost target = null;
     private CloseableHttpResponse response = null;
 
-    public TestClient() {
+    public TestClient04() {
         // Initialize to known values
         proxy = null;
 
@@ -226,17 +226,36 @@ public class TestClient {
                 }
             }
 
+
             if (method.toUpperCase().equals(HTTPGET)) {
                 if ((query != null) && (query.length() > 0)) {
                     path += "?" + query;
                 }
+                if (user.length() > 0) {
+                    response = sendGetRequest(scheme, host, iport, path, user, pwd);
+                } else {
+                    response = sendGetRequest(scheme, host, iport, path);
+                }
             }
 
-            if (user.length() > 0) {
-                response = sendRequest(scheme, host, iport, path, method, user, pwd);
-            } else {
-                response = sendRequest(scheme, host, iport, path, method);
+            if (method.toUpperCase().equals(HTTPPOST)) {
+                if (user.length() > 0) {
+                    response = sendPostRequest(scheme, host, iport, path, user, pwd);
+                } else {
+                    response = sendPostRequest(scheme, host, iport, path);
+                }
+
             }
+
+            if (method.toUpperCase().equals(HTTPDELETE)) {
+                if (user.length() > 0) {
+                    response = sendDeleteRequest(scheme, host, iport, path, user, pwd);
+                } else {
+                    response = sendDeleteRequest(scheme, host, iport, path);
+                }
+
+            }
+
         } catch (Exception e) {
             throw new Exception("Error during send message", e);
         } finally {
@@ -264,6 +283,33 @@ public class TestClient {
         }
     }
 
+    private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        try {
+            if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+                throw new Exception("For basic authentication username and password are required");
+            } else {
+                this.username = username;
+                this.password = password;
+                this.useBasicAuthentication = true;
+
+                target = new HttpHost(host, port, scheme);
+                createBasicAuthContext(target);
+            }
+            response = sendPostRequest(scheme, host, port, path);
+        } catch (Exception e) {
+            // reset values
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+
+            throw new Exception("Error send delete request with authentication", e);
+        } finally {
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+        }
+        return response;
+    }
 
     private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path, final String method, final String username, final String password) throws Exception {
         try {
@@ -318,6 +364,153 @@ public class TestClient {
         } catch (Exception e) {
             logger.error("Error in sending request", e);
         }
+        return response;
+    }
+
+
+    private CloseableHttpResponse sendPostRequest(final String scheme, final String host, final int port, final String path) {
+        CloseableHttpResponse response = null;
+        URI uri = null;
+        HttpPost httpPost = null;
+
+        try {
+            uri = getUri(scheme, host, path);
+
+            if (target == null) {
+                target = new HttpHost(host, port, scheme);
+            }
+            httpPost = (HttpPost) getMessage(uri, HTTPPOST);
+
+            CloseableHttpClient httpclient = getHttpClient(scheme);
+
+            logger.info("Sending request to: {}", httpPost.toString());
+
+            if (useBasicAuthentication) {
+                response = httpclient.execute(target, httpPost, localContext);
+            } else {
+                response = httpclient.execute(target, httpPost);
+            }
+        } catch (Exception e) {
+            logger.error("Error in sending request", e);
+        }
+        return response;
+    }
+
+    private CloseableHttpResponse sendDeleteRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        try {
+            if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+                throw new Exception("For basic authentication username and password are required");
+            } else {
+                this.username = username;
+                this.password = password;
+                this.useBasicAuthentication = true;
+
+                target = new HttpHost(host, port, scheme);
+                createBasicAuthContext(target);
+            }
+
+            response = sendDeleteRequest(scheme, host, port, path);
+
+        } catch (Exception e) {
+            // reset values
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+
+            throw new Exception("Error send delete request with authentication", e);
+        } finally {
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+        }
+        return response;
+    }
+
+    private CloseableHttpResponse sendDeleteRequest(final String scheme, final String host, final int port, final String path) {
+        CloseableHttpResponse response = null;
+        URI uri = null;
+        HttpDelete httpDelete = null;
+
+        try {
+            uri = getUri(scheme, host, path);
+
+            if (target == null) {
+                target = new HttpHost(host, port, scheme);
+            }
+            httpDelete = (HttpDelete) getMessage(uri, HTTPDELETE);
+
+            CloseableHttpClient httpclient = getHttpClient(scheme);
+
+            logger.info("Sending request to: {}", httpDelete.toString());
+
+            if (useBasicAuthentication) {
+                response = httpclient.execute(target, httpDelete, localContext);
+            } else {
+                response = httpclient.execute(target, httpDelete);
+            }
+        } catch (Exception e) {
+            logger.error("Error in sending request", e);
+        }
+        return response;
+    }
+
+
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path, final String username, final String password) throws Exception {
+        try {
+            if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
+                throw new Exception("For basic authentication username and password are required");
+            } else {
+                this.username = username;
+                this.password = password;
+                this.useBasicAuthentication = true;
+
+                target = new HttpHost(host, port, scheme);
+                createBasicAuthContext(target);
+            }
+
+            response = sendGetRequest(scheme, host, port, path);
+
+        } catch (Exception e) {
+            // reset values
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+
+            throw new Exception("Error send get request with authentication", e);
+        } finally {
+            this.username = null;
+            this.password = null;
+            this.useBasicAuthentication = false;
+        }
+        return response;
+    }
+
+    private CloseableHttpResponse sendGetRequest(final String scheme, final String host, final int port, final String path) {
+
+        URI uri = null;
+        HttpGet httpGet = null;
+
+        try {
+            uri = getUri(scheme, host, path);
+
+            if (target == null) {
+                target = new HttpHost(host, port, scheme);
+            }
+            httpGet = (HttpGet) getMessage(uri, HTTPGET);
+
+            CloseableHttpClient httpclient = getHttpClient(scheme);
+
+            logger.info("Sending request to: {}", httpGet.toString());
+
+            if (useBasicAuthentication) {
+                response = httpclient.execute(target, httpGet, localContext);
+            } else {
+                response = httpclient.execute(target, httpGet);
+            }
+        } catch (Exception e) {
+            logger.error("Error in sending request", e);
+        }
+
         return response;
     }
 

@@ -13,8 +13,8 @@ import java.io.FileWriter;
 /**
  * Hello world!
  */
-public class GeoDataStoreTest {
-    private static Logger logger = LoggerFactory.getLogger(GeoDataStoreTest.class);
+public class GeoDataStoreTest04 {
+    private static Logger logger = LoggerFactory.getLogger(GeoDataStoreTest04.class);
     //private static String host = "http://test1:password@ngr3.geocat.net";
     private static String host = "https://WPM:testtest@test.geodatastore.pdok.nl";
     private static String baseUrl = host + "/geonetwork/geodatastore/api";
@@ -29,7 +29,7 @@ public class GeoDataStoreTest {
     public static void main(String[] args) {
 
         try {
-            GeoDataStoreTest app = new GeoDataStoreTest();
+            GeoDataStoreTest04 app = new GeoDataStoreTest04();
 
             app.doTests();
         } catch (Exception e) {
@@ -40,7 +40,7 @@ public class GeoDataStoreTest {
     private void doTests() throws Exception {
         logger.info("Start tests");
 
-        TestClient testClient = new TestClient();
+        TestClient04 testClient = new TestClient04();
         //testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
 
         // Good situations
@@ -80,7 +80,7 @@ public class GeoDataStoreTest {
      * @param testclient
      * @return
      */
-    private int TestGetCodeLists(final TestClient testclient) {
+    private int TestGetCodeLists(final TestClient04 testclient) {
         int error = 0;
         String testName = "TestGetCodeLists";
 
@@ -107,7 +107,7 @@ public class GeoDataStoreTest {
      * @param testclient
      * @return
      */
-    private int TestPost01(final TestClient testclient) {
+    private int TestPost01(final TestClient04 testclient) {
         int error = 0;
         String testName = "TestPost01";
 
@@ -163,7 +163,7 @@ public class GeoDataStoreTest {
     /**
      * Test add metadata to previously created dataset
      */
-    private int TestPostAddMetaData(final TestClient testclient) {
+    private int TestPostAddMetaData(final TestClient04 testclient) {
         int error = 0;
         String testName = "TestPostAddMetaData";
 
@@ -203,7 +203,7 @@ public class GeoDataStoreTest {
      * @param testclient
      * @return
      */
-    private int TestGetList1_2(final TestClient testclient) {
+    private int TestGetList1_2(final TestClient04 testclient) {
         int error = 0;
         String testName = "TestGetList";
 
@@ -229,7 +229,7 @@ public class GeoDataStoreTest {
      * @param testclient
      * @return
      */
-    private int TestGetList1_20(final TestClient testclient) {
+    private int TestGetList1_20(final TestClient04 testclient) {
         int error = 0;
         String testName = "TestGetList1_20";
 
@@ -255,7 +255,7 @@ public class GeoDataStoreTest {
      * @param testclient
      * @return
      */
-    private int TestDeleteDataset(final TestClient testclient) {
+    private int TestDeleteDataset(final TestClient04 testclient) {
         int error = 0;
         String testName = "TestDeleteDataset";
 
