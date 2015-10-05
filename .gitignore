@@ -1,0 +1,9 @@
+.classpath
+.idea/*
+.idea/libraries/*
+.project
+.settings/*
+*.log
+target/*
+testclient.iml
+somefile.txt

@@ -5,10 +5,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.junit.Assert.*;
 
-import java.text.DateFormat;
 import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by peltb on 10/1/2015.
@@ -98,7 +98,7 @@ public class TestJsonConverter {
             numberFields++;
             if (fieldValue != null) {
                 notNullFields++;
-                if (fieldValue.length() > 0){
+                if (fieldValue.length() > 0) {
                     filledFields++;
                 }
             }

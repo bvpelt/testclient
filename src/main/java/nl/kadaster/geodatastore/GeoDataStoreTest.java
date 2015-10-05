@@ -41,7 +41,7 @@ public class GeoDataStoreTest {
         logger.info("Start tests");
 
         TestClient testClient = new TestClient();
-        //testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
 
         // Good situations
         // The order of the tests is vital, don't change

@@ -31,6 +31,7 @@ public class GeoDataStoreStepdefs {
     public void there_is_a_testclient() throws Throwable {
         logger.info("Create testclient");
         testclient = new TestClient();
+        testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
     }
 
     @When("^I upload a random file$")

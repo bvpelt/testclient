@@ -304,7 +304,7 @@ public class TestClient {
             if (target == null) {
                 target = new HttpHost(host, port, scheme);
             }
-            httpRequest =  getMessage(uri, method);
+            httpRequest = getMessage(uri, method);
 
             CloseableHttpClient httpclient = getHttpClient(scheme);
 
