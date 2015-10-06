@@ -11,7 +11,7 @@ public class MetaData {
     private String location;
     private String lineage;
     private String license;
-    private String resolution;
+    private Integer resolution;
     private String identifier;
     private String url;
     private String thumbnail;
@@ -82,11 +82,11 @@ public class MetaData {
         this.license = license;
     }
 
-    public String getResolution() {
+    public int getResolution() {
         return resolution;
     }
 
-    public void setResolution(String resolution) {
+    public void setResolution(int resolution) {
         this.resolution = resolution;
     }
 
@@ -169,4 +169,5 @@ public class MetaData {
     public void setChangeDate(String changeDate) {
         this.changeDate = changeDate;
     }
+
 }

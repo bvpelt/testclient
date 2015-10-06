@@ -37,6 +37,7 @@ public class PDokStepdefs {
     public void i_ask_wfs_get_capabilities_secure() throws Throwable {
         for (String service : servicenames) {
             TestClient testclient = new TestClient();
+            testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
             String url = "https://geodata.nationaalgeoregister.nl/" + service + "/wfs?request=GetCapabilities";
             logger.info("Calling service {} with url {}", service, url);
             response = testclient.sendRequest(url, TestClient.HTTPGET);
@@ -52,6 +53,7 @@ public class PDokStepdefs {
     public void i_ask_wfs_get_capabilities_not_secure() throws Throwable {
         for (String service : servicenames) {
             TestClient testclient = new TestClient();
+            testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
             String url = "http://geodata.nationaalgeoregister.nl/" + service + "/wfs?request=GetCapabilities";
             logger.info("Calling service {} with url {}", service, url);
             response = testclient.sendRequest(url, TestClient.HTTPGET);

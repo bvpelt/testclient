@@ -1,6 +1,7 @@
 package nl.kadaster.geodatastore;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ public class TestJsonConverter {
             String fieldValue = json.getStringNode(fieldName);
             logger.info("Found field: {} value {}", fieldName, fieldValue);
         }
-        assertEquals(numFields, 19);
+        Assert.assertEquals(numFields, 19);
         logger.info("End   test {}", testName);
     }
 

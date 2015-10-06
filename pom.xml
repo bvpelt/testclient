@@ -34,7 +34,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
+
         </dependency>
 
         <dependency>
@@ -62,6 +62,14 @@
         </dependency>
 
         <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.6</version>
+        </dependency>
+
+
+        <!-- Test dependencies -->
+        <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>
             <version>${jackson.version}</version>
@@ -69,52 +77,68 @@
 
         <dependency>
             <groupId>info.cukes</groupId>
-            <artifactId>cucumber-core</artifactId>
-            <version>${cucumber.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>info.cukes</groupId>
-            <artifactId>cucumber-html</artifactId>
-            <version>${cucumber.html.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>info.cukes</groupId>
             <artifactId>cucumber-java</artifactId>
             <version>${cucumber.version}</version>
+            <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>info.cukes</groupId>
             <artifactId>cucumber-junit</artifactId>
             <version>${cucumber.version}</version>
+            <scope>test</scope>
         </dependency>
+        <!--
+
         <dependency>
             <groupId>info.cukes</groupId>
-            <artifactId>cucumber-jvm-deps</artifactId>
-            <version>${cucumber.jvm.version}</version>
+            <artifactId>cucumber-core</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>info.cukes</groupId>
-            <artifactId>gherkin</artifactId>
-            <version>${gherkin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>${hamcrest.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-server</artifactId>
-            <version>${selenium.version}</version>
+            <artifactId>cucumber-html</artifactId>
+            <version>${cucumber.html.version}</version>
+            <scope>test</scope>
         </dependency>
 
+                <dependency>
+                    <groupId>info.cukes</groupId>
+                    <artifactId>cucumber-jvm-deps</artifactId>
+                    <version>${cucumber.jvm.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>info.cukes</groupId>
+                    <artifactId>gherkin</artifactId>
+                    <version>${gherkin.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-all</artifactId>
+                    <version>${hamcrest.version}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.seleniumhq.selenium</groupId>
+                    <artifactId>selenium-server</artifactId>
+                    <version>${selenium.version}</version>
+                    <scope>test</scope>
+                </dependency>
 
         <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.6</version>
+            <groupId>info.cukes</groupId>
+            <artifactId>cucumber-picocontainer</artifactId>
+            <version>${cucumber.version}</version>
+            <scope>test</scope>
         </dependency>
-
+        -->
     </dependencies>
 
     <build>
@@ -138,22 +162,25 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.version}</version>
                 <configuration>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <compilerArgument>-Werror</compilerArgument>
                 </configuration>
             </plugin>
 
             <!-- Maven Assembly Plugin -->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${maven.assembly.version}</version>
                 <configuration>
-                    <!-- get all project dependencies -->
+
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
-                    <!-- MainClass in mainfest make a executable jar -->
+
                     <archive>
                         <manifest>
                             <mainClass>nl.kadaster.geodatastore.GeoDataStoreTest</mainClass>
@@ -164,7 +191,7 @@
                 <executions>
                     <execution>
                         <id>make-assembly</id>
-                        <!-- bind to the packaging phase -->
+
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -172,7 +199,44 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
 
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+                <executions>
+                    <execution>
+                        <phase>integration-test</phase>
+
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+
+                    </execution>
+                </executions>
+                <configuration>
+
+                    <classpathScope>test</classpathScope>
+                    <mainClass>cucumber.api.cli.Main</mainClass>
+
+                    <arguments>
+                        <argument>--plugin</argument>
+                        <argument>junit:output/cucumber-junit-report/allcukes.xml</argument>
+                        <argument>--plugin</argument>
+                        <argument>pretty</argument>
+                        <argument>--plugin</argument>
+                        <argument>html:output/cucumber-html-report</argument>
+                        <argument>--plugin</argument>
+                        <argument>json:output/cucumber_report.json</argument>
+
+                        <argument>--glue</argument>
+                        <argument>nl.kadaster.geodatastore.cucumbertest</argument>
+                        <argument>src\main\java\nl\kadaster\geodatastore</argument>
+                        <argument>src\main\resources\nl\kadaster\geodatastore\cucumbertest</argument>
+                        <argument>src\test\java\nl\kadaster\geodatastore\cucumbertest</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
