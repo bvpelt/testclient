@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Created by peltb on 10/1/2015.
  */

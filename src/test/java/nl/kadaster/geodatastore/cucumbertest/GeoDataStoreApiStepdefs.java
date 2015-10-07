@@ -19,11 +19,25 @@ import java.io.FileWriter;
 /**
  * Created by bvpelt on 10/3/15.
  */
-public class GeoDataStoreStepdefs {
-    private static Logger logger = LoggerFactory.getLogger(GeoDataStoreStepdefs.class);
+public class GeoDataStoreApiStepdefs {
+    private static Logger logger = LoggerFactory.getLogger(GeoDataStoreApiStepdefs.class);
+
+    /*
     //private static String host = "http://test1:password@ngr3.geocat.net";
-    private static String host = "https://WPM:testtest@test.geodatastore.pdok.nl";
-    private static String baseUrl = host + "/geonetwork/geodatastore/api";
+    private static String scheme = "http";
+    private static String username = "test1";
+    private static String password = "password";
+    private static String host = "ngr3.geocat.net";
+    /*
+    private static String scheme = "https";
+    private static String username = "WPM";
+    private static String password = "testtest";
+    private static String host = "test.geodatastore.pdok.nl";
+    */
+    private static boolean usePdok = false;
+    private static Configuration conf = new Configuration(usePdok);
+    private static String fullurl = conf.getFullUrl();
+    private static String baseUrl = fullurl + "/geonetwork/geodatastore/api";
     private static String baseDataSetUrl = baseUrl + "/dataset";
     private static String baseCodeListUrl = baseUrl + "/registry";
     private CloseableHttpResponse response;
@@ -87,7 +101,7 @@ public class GeoDataStoreStepdefs {
                         md.setSummary(json.getStringNode("summary"));
                         md.setKeywords(json.getStringNode("keywords"));
                         md.setLocation(json.getStringNode("location"));
-                      //  md.setLineage(json.getStringNode("lineage"));
+                        //  md.setLineage(json.getStringNode("lineage"));
                         md.setLicense(json.getStringNode("license"));
                         md.setResolution(Integer.parseInt(json.getStringNode("resolution")));
                         md.setIdentifier(json.getStringNode("identifier"));
@@ -263,7 +277,7 @@ public class GeoDataStoreStepdefs {
         }
     }
 
-    @Given("^the dataset is successfully published$")
+    @Given("^The dataset is successfully published$")
     public void the_dataset_is_successfully_published() throws Throwable {
         if (md.getStatus().equals("published")) {
             throw new Exception("No published dataset");
@@ -286,5 +300,16 @@ public class GeoDataStoreStepdefs {
             throw new Exception("Error in upload random file");
         }
     }
+
+    @When("^I delete the dataset$")
+    public void i_delete_the_dataset() throws Throwable {
+
+        logger.info("Delete dataset");
+
+        testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+        String datasetUrl = baseDataSetUrl + "/" + lastIdentifier;
+        response = testclient.sendRequest(datasetUrl, TestClient.HTTPDELETE);
+    }
+
 
 }
