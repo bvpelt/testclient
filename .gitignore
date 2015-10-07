@@ -4,6 +4,8 @@
 .project
 .settings/*
 *.log
+example.*
+output/*
+somefile.txt
 target/*
 testclient.iml
-somefile.txt

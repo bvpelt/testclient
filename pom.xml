@@ -88,7 +88,7 @@
             <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
-        <!--
+
 
         <dependency>
             <groupId>info.cukes</groupId>
@@ -104,33 +104,33 @@
             <scope>test</scope>
         </dependency>
 
-                <dependency>
-                    <groupId>info.cukes</groupId>
-                    <artifactId>cucumber-jvm-deps</artifactId>
-                    <version>${cucumber.jvm.version}</version>
-                    <scope>test</scope>
-                </dependency>
+        <dependency>
+            <groupId>info.cukes</groupId>
+            <artifactId>cucumber-jvm-deps</artifactId>
+            <version>${cucumber.jvm.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-                <dependency>
-                    <groupId>info.cukes</groupId>
-                    <artifactId>gherkin</artifactId>
-                    <version>${gherkin.version}</version>
-                    <scope>test</scope>
-                </dependency>
+        <dependency>
+            <groupId>info.cukes</groupId>
+            <artifactId>gherkin</artifactId>
+            <version>${gherkin.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-                <dependency>
-                    <groupId>org.hamcrest</groupId>
-                    <artifactId>hamcrest-all</artifactId>
-                    <version>${hamcrest.version}</version>
-                    <scope>test</scope>
-                </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>${hamcrest.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-                <dependency>
-                    <groupId>org.seleniumhq.selenium</groupId>
-                    <artifactId>selenium-server</artifactId>
-                    <version>${selenium.version}</version>
-                    <scope>test</scope>
-                </dependency>
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-server</artifactId>
+            <version>${selenium.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>info.cukes</groupId>
@@ -138,7 +138,7 @@
             <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
-        -->
+
     </dependencies>
 
     <build>
@@ -231,9 +231,9 @@
 
                         <argument>--glue</argument>
                         <argument>nl.kadaster.geodatastore.cucumbertest</argument>
-                        <argument>src\main\java\nl\kadaster\geodatastore</argument>
-                        <argument>src\main\resources\nl\kadaster\geodatastore\cucumbertest</argument>
-                        <argument>src\test\java\nl\kadaster\geodatastore\cucumbertest</argument>
+                        <argument>src/main/java/nl/kadaster/geodatastore</argument>
+                        <argument>src/main/resources/nl/kadaster/geodatastore/cucumbertest</argument>
+                        <argument>src/test/java/nl/kadaster/geodatastore/cucumbertest</argument>
                     </arguments>
                 </configuration>
             </plugin>
