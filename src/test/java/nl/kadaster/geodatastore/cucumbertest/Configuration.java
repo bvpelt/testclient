@@ -19,6 +19,7 @@ public class Configuration {
     private static String pdok_username = "WPM";
     private static String pdok_password = "testtest";
     private static String pdok_host = "test.geodatastore.pdok.nl";
+    private static long timeOut = 10000; //ms
 
     private static String fullurl = null;
     private boolean usePdok = false;
@@ -54,5 +55,9 @@ public class Configuration {
         } else {
             return ngr_password;
         }
+    }
+
+    public long getTimeOut() {
+        return timeOut;
     }
 }

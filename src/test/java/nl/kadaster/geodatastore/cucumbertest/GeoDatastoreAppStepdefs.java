@@ -30,7 +30,7 @@ public class GeoDatastoreAppStepdefs {
     public void that_I_am_positioned_at_geodatastore_login_page() throws Throwable {
         driver = new FirefoxDriver();
         driver.navigate().to(baseUrl);
-        long timeout = 10000; //ms
+        long timeout = conf.getTimeOut();
         TimeUnit unit = TimeUnit.MILLISECONDS;
 
         driver.manage().timeouts().implicitlyWait(timeout, unit);
