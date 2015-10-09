@@ -69,11 +69,14 @@ public class TestClient {
     // option to add a file
     private boolean addRandomFile = false;
     private boolean addFile = false;
+    private boolean addMetaData = false;
     private FileBody fileEntity;
 
     // option publish
     private Boolean publish = null;
     private StringBody pubEntity;
+    private StringBody metaDataEntity;
+    private String metaData = null;
 
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd = "geodatastore";
@@ -375,47 +378,29 @@ public class TestClient {
 
         httpRequest.setConfig(rc);
 
+        HttpEntity reqEntity = null;
+        MultipartEntityBuilder mb=MultipartEntityBuilder.create();
+
+        if (publish != null) {
+            mb.addPart("publish", pubEntity);
+        }
         if (addRandomFile) {
             logger.info("Add random file");
             FileBody fileData = getFileEntity();
+            mb.addPart("dataset", fileData);
+        }
+        if (addMetaData) {
+            logger.info("Add metadata");
 
-            HttpEntity reqEntity = null;
-
-            if (publish != null) {
-                reqEntity = MultipartEntityBuilder.create()
-                        .addPart("dataset", fileData)
-                        .addPart("publish", pubEntity)
-                        .build();
-            } else {
-                reqEntity = MultipartEntityBuilder.create()
-                        .addPart("dataset", fileData)
-                        .build();
-            }
-
-            if (httpRequest instanceof HttpPost) {
-                ((HttpPost) httpRequest).setEntity(reqEntity);
-            }
-        } else if (addFile) {
-            logger.info("Add previously created file");
-
-            HttpEntity reqEntity = null;
-
-            if (publish != null) {
-                reqEntity = MultipartEntityBuilder.create()
-                        .addPart("metadata", fileEntity)
-                        .addPart("publish", pubEntity)
-                        .build();
-            } else {
-                reqEntity = MultipartEntityBuilder.create()
-                        .addPart("metadata", fileEntity)
-                        .build();
-            }
-
-            if (httpRequest instanceof HttpPost) {
-                ((HttpPost) httpRequest).setEntity(reqEntity);
-            }
+            getMetaDataEntity();
+            mb.addPart("metadata", metaDataEntity);
         }
 
+        reqEntity = mb.build();
+
+        if (httpRequest instanceof HttpPost) {
+            ((HttpPost) httpRequest).setEntity(reqEntity);
+        }
         return httpRequest;
     }
 
@@ -540,6 +525,12 @@ public class TestClient {
         return pubEntity;
     }
 
+    private StringBody getMetaDataEntity() {
+        metaDataEntity = new StringBody(getMetaData(), ContentType.APPLICATION_JSON);
+
+        return metaDataEntity;
+    }
+
     /**
      * Add dummy file
      *
@@ -603,7 +594,7 @@ public class TestClient {
         return addRandomFile;
     }
 
-    public void setAddRandomFile(boolean addRandomFile) {
+    public void setAddRandomFile(final boolean addRandomFile) {
         this.addRandomFile = addRandomFile;
     }
 
@@ -611,7 +602,7 @@ public class TestClient {
         return socketTimeOut;
     }
 
-    public void setSocketTimeOut(int socketTimeOut) {
+    public void setSocketTimeOut(final int socketTimeOut) {
         this.socketTimeOut = socketTimeOut;
     }
 
@@ -619,7 +610,7 @@ public class TestClient {
         return connectTimeOut;
     }
 
-    public void setConnectTimeOut(int connectTimeOut) {
+    public void setConnectTimeOut(final int connectTimeOut) {
         this.connectTimeOut = connectTimeOut;
     }
 
@@ -627,7 +618,7 @@ public class TestClient {
         return requestTimeOut;
     }
 
-    public void setRequestTimeOut(int requestTimeOut) {
+    public void setRequestTimeOut(final int requestTimeOut) {
         this.requestTimeOut = requestTimeOut;
     }
 
@@ -635,7 +626,7 @@ public class TestClient {
         return proxyPort;
     }
 
-    public void setProxyPort(int proxyPort) {
+    public void setProxyPort(final int proxyPort) {
         this.proxyPort = proxyPort;
     }
 
@@ -643,7 +634,7 @@ public class TestClient {
         return proxyHost;
     }
 
-    public void setProxyHost(String proxyHost) {
+    public void setProxyHost(final String proxyHost) {
         this.proxyHost = proxyHost;
     }
 
@@ -651,7 +642,7 @@ public class TestClient {
         return useBasicAuthentication;
     }
 
-    public void setUseBasicAuthentication(boolean useBasicAuthentication) {
+    public void setUseBasicAuthentication(final boolean useBasicAuthentication) {
         this.useBasicAuthentication = useBasicAuthentication;
     }
 
@@ -659,7 +650,7 @@ public class TestClient {
         return addFile;
     }
 
-    public void setAddFile(boolean addFile) {
+    public void setAddFile(final boolean addFile) {
         this.addFile = addFile;
     }
 
@@ -668,8 +659,25 @@ public class TestClient {
         return publish;
     }
 
-    public void setPublish(Boolean publish) {
+    public void setPublish(final Boolean publish) {
         this.publish = new Boolean(publish);
         getPublishedEntity();
+    }
+
+    public String getMetaData() {
+        return metaData;
+    }
+
+    public void setMetaData(final String metaData) {
+        this.metaData = metaData;
+        addMetaData = true;
+    }
+
+    public boolean isAddMetaData() {
+        return addMetaData;
+    }
+
+    public void setAddMetaData(final boolean addMetaData) {
+        this.addMetaData = addMetaData;
     }
 }

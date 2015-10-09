@@ -17,7 +17,7 @@ public class GeoDataStoreTest {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreTest.class);
     //private static String host = "http://test1:password@ngr3.geocat.net";
     private static String host = "https://WPM:testtest@test.geodatastore.pdok.nl";
-    private static String baseUrl = host + "/geonetwork/geodatastore/api";
+    private static String baseUrl = host + "/geonetwork/api/v1";
     private static String baseDataSetUrl = baseUrl + "/dataset";
     private static String baseCodeListUrl = baseUrl + "/registry";
     private int failures = 0;
@@ -25,6 +25,7 @@ public class GeoDataStoreTest {
     private boolean verbose = true;
     private StringBuffer resultText = null;
     private String lastIdentifier;
+    private MetaDataResponse mdresponse;
 
     public static void main(String[] args) {
 
@@ -127,14 +128,12 @@ public class GeoDataStoreTest {
         return error;
     }
 
-    private MetaData generateMetaData(final String jsonString) {
-        MetaData md = new MetaData();
+    private MetaDataResponse generateMetaData(final String jsonString) {
+        MetaDataResponse md = new MetaDataResponse();
         JsonConverter json = new JsonConverter();
 
         json.loadString(jsonString);
-        md.setTitle("TRIAL databestand");
-        md.setSummary("TRIAL databestand to make sure update metadata works");
-        md.setKeywords("TRIAL databestand, Geodatastore");
+
         md.setIdentifier(json.getStringNode("identifier"));
 
         return md;
@@ -173,15 +172,26 @@ public class GeoDataStoreTest {
             String jsonString;
             String fileName = "somefile.txt";
             // generate metadata based on result from previous call
-            MetaData md = generateMetaData(resultText.toString());
+
+            MetaDataRequest mdrequest = new MetaDataRequest();
+            mdrequest.setTitle("TEST METADATA TITLE");
+            mdrequest.setSummary("TEST METADATA SUMMARY this is the summary of the test metadata");
+            mdrequest.addKeyword("TEST");
+            mdrequest.addKeyword("METADATA");
+            mdrequest.addTopicCategorie("Gezondheid");
+            mdrequest.addTopicCategorie("Grenzen");
+            mdrequest.setLocation("Apeldoorn");
+            mdrequest.setLineage("Lineage");
+            mdrequest.setLicense("Public Domain");
+            mdrequest.setResolution(1000);
             JsonConverter jc = new JsonConverter();
-            jsonString = jc.getObjectJson(md);
-            writeJsonFile(fileName, jsonString);
-            testclient.getFileEntity(fileName);
+            jsonString = jc.getObjectJson(mdrequest);
+
+            testclient.setMetaData(jsonString);
             testclient.setPublish(false);
 
-            String url = baseDataSetUrl + "/" + md.getIdentifier();
-            testclient.getFileEntity(fileName);
+            String url = baseDataSetUrl + "/" + mdresponse.getIdentifier();
+            //testclient.getFileEntity(fileName);
             testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
 
             CloseableHttpResponse response = testclient.sendRequest(url, TestClient.HTTPPOST);
@@ -191,6 +201,7 @@ public class GeoDataStoreTest {
         } catch (Exception e) {
             error += 1;
         } finally {
+            testclient.setAddMetaData(false);
             testclient.closeSession();
         }
         logger.info("End   test: {} with {}", testName, ((error == 0) ? "success" : "failure"));
@@ -311,8 +322,8 @@ public class GeoDataStoreTest {
                     resultText = new StringBuffer(content);
                     if (resultText.toString().length() > 0) {
                         if (response.getStatusLine().getStatusCode() == 200) {
-                            MetaData md = generateMetaData(resultText.toString());
-                            lastIdentifier = md.getIdentifier();
+                            mdresponse = generateMetaData(resultText.toString());
+                            lastIdentifier = mdresponse.getIdentifier();
                         }
                     }
                     logger.info("Result size: {}, content: {}", content.length(), content);

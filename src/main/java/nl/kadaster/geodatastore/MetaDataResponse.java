@@ -1,13 +1,19 @@
 package nl.kadaster.geodatastore;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Created by peltb on 10/2/2015.
+ * Created by PeltB on 9-10-2015.
  */
-public class MetaData {
+public class MetaDataResponse {
+
     private String title;
     private String summary;
-    private String keywords;
-    private String topicCategories;
+    private List<String> keywordList = new ArrayList<String>();
+    private String[] keywords;
+    private List<String> topicCategoriesList = new ArrayList<String>();
+    private String[] topicCategories;
     private String location;
     private String lineage;
     private String license;
@@ -23,14 +29,14 @@ public class MetaData {
     private String filetype;
     private String changeDate;
 
-    public MetaData() {
+    public MetaDataResponse() {
     }
 
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    public void setTitle(final String title) {
         this.title = title;
     }
 
@@ -38,31 +44,56 @@ public class MetaData {
         return summary;
     }
 
-    public void setSummary(String summary) {
+    public void setSummary(final String summary) {
         this.summary = summary;
     }
 
-    public String getKeywords() {
+    public String[] getKeywords() {
+        keywords = new String[keywordList.size()];
+        int i = 0;
+        for (String kw : keywordList) {
+            keywords[i++] = kw;
+        }
         return keywords;
     }
 
-    public void setKeywords(String keywords) {
+    public void setKeywords(final String[] keywords) {
         this.keywords = keywords;
+        keywordList = new ArrayList<String>();
+        for (String kw: keywords) {
+            keywordList.add(kw);
+        }
     }
 
-    public String getTopicCategories() {
+    public void addKeyword(final String keyword) {
+        this.keywordList.add(keyword);
+    }
+    public String[] getTopicCategories() {
+        topicCategories = new String[topicCategoriesList.size()];
+        int i = 0;
+        for (String top: topicCategoriesList) {
+            topicCategories[i++] = top;
+        }
         return topicCategories;
     }
 
-    public void setTopicCategories(String topicCategories) {
+    public void setTopicCategories(final String[] topicCategories) {
         this.topicCategories = topicCategories;
+        topicCategoriesList = new ArrayList<String>();
+        for (String top: topicCategories) {
+            topicCategoriesList.add(top);
+        }
+    }
+
+    public void addTopicCategorie(final String topicCategorie) {
+        this.topicCategoriesList.add(topicCategorie);
     }
 
     public String getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(final String location) {
         this.location = location;
     }
 
@@ -70,7 +101,7 @@ public class MetaData {
         return lineage;
     }
 
-    public void setLineage(String lineage) {
+    public void setLineage(final String lineage) {
         this.lineage = lineage;
     }
 
@@ -78,7 +109,7 @@ public class MetaData {
         return license;
     }
 
-    public void setLicense(String license) {
+    public void setLicense(final String license) {
         this.license = license;
     }
 
@@ -86,7 +117,7 @@ public class MetaData {
         return resolution;
     }
 
-    public void setResolution(int resolution) {
+    public void setResolution(final int resolution) {
         this.resolution = resolution;
     }
 
@@ -94,7 +125,7 @@ public class MetaData {
         return identifier;
     }
 
-    public void setIdentifier(String identifier) {
+    public void setIdentifier(final String identifier) {
         this.identifier = identifier;
     }
 
@@ -102,7 +133,7 @@ public class MetaData {
         return url;
     }
 
-    public void setUrl(String url) {
+    public void setUrl(final String url) {
         this.url = url;
     }
 
@@ -110,7 +141,7 @@ public class MetaData {
         return thumbnail;
     }
 
-    public void setThumbnail(String thumbnail) {
+    public void setThumbnail(final String thumbnail) {
         this.thumbnail = thumbnail;
     }
 
@@ -118,7 +149,7 @@ public class MetaData {
         return extent;
     }
 
-    public void setExtent(String extent) {
+    public void setExtent(final String extent) {
         this.extent = extent;
     }
 
@@ -126,7 +157,7 @@ public class MetaData {
         return error;
     }
 
-    public void setError(String error) {
+    public void setError(final String error) {
         this.error = error;
     }
 
@@ -134,7 +165,7 @@ public class MetaData {
         return messages;
     }
 
-    public void setMessages(String messages) {
+    public void setMessages(final String messages) {
         this.messages = messages;
     }
 
@@ -142,7 +173,7 @@ public class MetaData {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(final String status) {
         this.status = status;
     }
 
@@ -150,7 +181,7 @@ public class MetaData {
         return valid;
     }
 
-    public void setValid(String valid) {
+    public void setValid(final String valid) {
         this.valid = valid;
     }
 
@@ -158,7 +189,7 @@ public class MetaData {
         return filetype;
     }
 
-    public void setFiletype(String filetype) {
+    public void setFiletype(final String filetype) {
         this.filetype = filetype;
     }
 
@@ -166,7 +197,7 @@ public class MetaData {
         return changeDate;
     }
 
-    public void setChangeDate(String changeDate) {
+    public void setChangeDate(final String changeDate) {
         this.changeDate = changeDate;
     }
 

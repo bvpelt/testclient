@@ -5,6 +5,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import nl.kadaster.geodatastore.JsonConverter;
 import nl.kadaster.geodatastore.MetaData;
+import nl.kadaster.geodatastore.MetaDataResponse;
 import nl.kadaster.geodatastore.TestClient;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -34,10 +35,10 @@ public class GeoDataStoreApiStepdefs {
     private static String password = "testtest";
     private static String host = "test.geodatastore.pdok.nl";
     */
-    private static boolean usePdok = false;
+    private static boolean usePdok = true;
     private static Configuration conf = new Configuration(usePdok);
     private static String fullurl = conf.getFullUrl();
-    private static String baseUrl = fullurl + "/geonetwork/geodatastore/api";
+    private static String baseUrl = fullurl + "/geonetwork/api/v1";
     private static String baseDataSetUrl = baseUrl + "/dataset";
     private static String baseCodeListUrl = baseUrl + "/registry";
     private CloseableHttpResponse response;
@@ -45,7 +46,7 @@ public class GeoDataStoreApiStepdefs {
     private TestClient testclient = null;
     private String lastIdentifier = null;
     private StringBuffer resultText = null;
-    private MetaData md = null;
+    private MetaDataResponse mdresponse = null;
     private boolean useProxy = false;
 
     @Given("^There is a testclient$")
@@ -89,7 +90,7 @@ public class GeoDataStoreApiStepdefs {
                 resultText = new StringBuffer(content);
                 if (resultText.toString().length() > 0) {
                     if (response.getStatusLine().getStatusCode() == 200) {
-                        md = new MetaData();
+                        mdresponse = new MetaDataResponse();
                         JsonConverter json = new JsonConverter();
 
                         json.loadString(resultText.toString());
@@ -97,23 +98,22 @@ public class GeoDataStoreApiStepdefs {
                         logger.info("Identifier: {}", lastIdentifier);
                         // fill metadata with received metadata
 
-                        md.setTitle(json.getStringNode("title"));
-                        md.setSummary(json.getStringNode("summary"));
-                        md.setKeywords(json.getStringNode("keywords"));
-                        md.setLocation(json.getStringNode("location"));
+                        mdresponse.setTitle(json.getStringNode("title"));
+                        mdresponse.setSummary(json.getStringNode("summary"));
+                        //mdresponse.setKeywords(json.getStringNode("keywords"));
+                        mdresponse.setLocation(json.getStringNode("location"));
                         //  md.setLineage(json.getStringNode("lineage"));
-                        md.setLicense(json.getStringNode("license"));
-                        md.setResolution(Integer.parseInt(json.getStringNode("resolution")));
-                        md.setIdentifier(json.getStringNode("identifier"));
-                        md.setUrl(json.getStringNode("url"));
-                        md.setExtent(json.getStringNode("extent"));
-                        md.setError(json.getStringNode("error"));
-                        md.setMessages(json.getStringNode("messages"));
-                        md.setStatus(json.getStringNode("status"));
-                        md.setFiletype(json.getStringNode("fileType"));
-                        md.setChangeDate(json.getStringNode("changeDate"));
-                        md.setValid(json.getStringNode("valid"));
-
+                        mdresponse.setLicense(json.getStringNode("license"));
+                        mdresponse.setResolution(Integer.parseInt(json.getStringNode("resolution")));
+                        mdresponse.setIdentifier(json.getStringNode("identifier"));
+                        mdresponse.setUrl(json.getStringNode("url"));
+                        mdresponse.setExtent(json.getStringNode("extent"));
+                        mdresponse.setError(json.getStringNode("error"));
+                        mdresponse.setMessages(json.getStringNode("messages"));
+                        mdresponse.setStatus(json.getStringNode("status"));
+                        mdresponse.setFiletype(json.getStringNode("fileType"));
+                        mdresponse.setChangeDate(json.getStringNode("changeDate"));
+                        mdresponse.setValid(json.getStringNode("valid"));
                     }
                 }
                 logger.info("Result size: {}, content: {}", content.length(), content);
