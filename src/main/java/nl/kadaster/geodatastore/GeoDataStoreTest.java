@@ -170,7 +170,7 @@ public class GeoDataStoreTest {
 
         try {
             String jsonString;
-            String fileName = "somefile.txt";
+
             // generate metadata based on result from previous call
 
             MetaDataRequest mdrequest = new MetaDataRequest();

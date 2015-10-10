@@ -3,7 +3,7 @@ package nl.kadaster.geodatastore.cucumbertest;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -29,6 +29,7 @@ public class GeoDatastoreAppStepdefs {
     @Given("^That I am positioned at geodatastore login page$")
     public void that_I_am_positioned_at_geodatastore_login_page() throws Throwable {
         driver = new FirefoxDriver();
+        Assert.assertNotNull(driver);
         driver.navigate().to(baseUrl);
         long timeout = conf.getTimeOut();
         TimeUnit unit = TimeUnit.MILLISECONDS;

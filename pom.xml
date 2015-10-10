@@ -130,14 +130,14 @@
             <version>${selenium.version}</version>
             <scope>test</scope>
         </dependency>
-
+<!--
         <dependency>
             <groupId>info.cukes</groupId>
             <artifactId>cucumber-picocontainer</artifactId>
             <version>${cucumber.version}</version>
             <scope>test</scope>
         </dependency>
-
+-->
     </dependencies>
 
     <build>

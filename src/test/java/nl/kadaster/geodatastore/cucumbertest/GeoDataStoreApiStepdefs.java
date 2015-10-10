@@ -3,8 +3,9 @@ package nl.kadaster.geodatastore.cucumbertest;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import org.junit.Assert;
 import nl.kadaster.geodatastore.JsonConverter;
-import nl.kadaster.geodatastore.MetaData;
+import nl.kadaster.geodatastore.MetaDataRequest;
 import nl.kadaster.geodatastore.MetaDataResponse;
 import nl.kadaster.geodatastore.TestClient;
 import org.apache.http.HttpEntity;
@@ -13,41 +14,30 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-
 /**
  * Created by bvpelt on 10/3/15.
  */
 public class GeoDataStoreApiStepdefs {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreApiStepdefs.class);
 
-    /*
-    //private static String host = "http://test1:password@ngr3.geocat.net";
-    private static String scheme = "http";
-    private static String username = "test1";
-    private static String password = "password";
-    private static String host = "ngr3.geocat.net";
-    /*
-    private static String scheme = "https";
-    private static String username = "WPM";
-    private static String password = "testtest";
-    private static String host = "test.geodatastore.pdok.nl";
-    */
     private static boolean usePdok = true;
+    private boolean useProxy = false;
+
+
     private static Configuration conf = new Configuration(usePdok);
     private static String fullurl = conf.getFullUrl();
     private static String baseUrl = fullurl + "/geonetwork/api/v1";
     private static String baseDataSetUrl = baseUrl + "/dataset";
     private static String baseCodeListUrl = baseUrl + "/registry";
-    private CloseableHttpResponse response;
 
-    private TestClient testclient = null;
-    private String lastIdentifier = null;
-    private StringBuffer resultText = null;
-    private MetaDataResponse mdresponse = null;
-    private boolean useProxy = false;
+    private CloseableHttpResponse response;
+    private TestClient testclient;
+    private String lastIdentifier;
+    private StringBuffer resultText;
+    private MetaDataResponse mdresponse = new MetaDataResponse();
+    private JsonConverter json = new JsonConverter();
+    private GeoDataStoreApiContext context = GeoDataStoreApiContext.getInstance();
+
 
     @Given("^There is a testclient$")
     public void there_is_a_testclient() throws Throwable {
@@ -56,26 +46,25 @@ public class GeoDataStoreApiStepdefs {
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
         }
+        Assert.assertNotNull(testclient);
     }
 
     @When("^I upload a random file$")
     public void i_upload_a_random_file() throws Throwable {
         logger.info("Upload random file");
+
         testclient.setAddRandomFile(true);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         response = testclient.sendRequest(baseDataSetUrl, TestClient.HTTPPOST);
+
         testclient.setAddRandomFile(false);
+        Assert.assertNotNull(response);
     }
 
     @Then("^I get a http success status$")
     public void i_get_a_http_success_status() throws Throwable {
-        logger.info("Read return code");
-        if (null == response) {
-            throw new Exception("No response object available");
-        }
-        if (response.getStatusLine().getStatusCode() != 200) {
-            throw new Exception("Invalid status code");
-        }
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200,response.getStatusLine().getStatusCode());
     }
 
     @Then("^I get the identifier of the uploaded dataset$")
@@ -85,35 +74,23 @@ public class GeoDataStoreApiStepdefs {
 
         try {
             entity = response.getEntity();
+            Assert.assertNotNull(entity);
             if (entity != null) {
                 String content = EntityUtils.toString(entity);
+                Assert.assertNotNull(content);
                 resultText = new StringBuffer(content);
+                Assert.assertNotNull(resultText);
+                Assert.assertNotEquals(0, resultText.toString().length());
                 if (resultText.toString().length() > 0) {
                     if (response.getStatusLine().getStatusCode() == 200) {
-                        mdresponse = new MetaDataResponse();
-                        JsonConverter json = new JsonConverter();
 
                         json.loadString(resultText.toString());
-                        lastIdentifier = json.getStringNode("identifier");
+                        lastIdentifier = new String(json.getStringNode("identifier"));
+                        context.setDataSetIdentifier(lastIdentifier);
+                        context.setResultJson(resultText.toString());
                         logger.info("Identifier: {}", lastIdentifier);
                         // fill metadata with received metadata
-
-                        mdresponse.setTitle(json.getStringNode("title"));
-                        mdresponse.setSummary(json.getStringNode("summary"));
-                        //mdresponse.setKeywords(json.getStringNode("keywords"));
-                        mdresponse.setLocation(json.getStringNode("location"));
-                        //  md.setLineage(json.getStringNode("lineage"));
-                        mdresponse.setLicense(json.getStringNode("license"));
-                        mdresponse.setResolution(Integer.parseInt(json.getStringNode("resolution")));
-                        mdresponse.setIdentifier(json.getStringNode("identifier"));
-                        mdresponse.setUrl(json.getStringNode("url"));
-                        mdresponse.setExtent(json.getStringNode("extent"));
-                        mdresponse.setError(json.getStringNode("error"));
-                        mdresponse.setMessages(json.getStringNode("messages"));
-                        mdresponse.setStatus(json.getStringNode("status"));
-                        mdresponse.setFiletype(json.getStringNode("fileType"));
-                        mdresponse.setChangeDate(json.getStringNode("changeDate"));
-                        mdresponse.setValid(json.getStringNode("valid"));
+                        mdresponse = convertToMetaDataReponse(resultText.toString());
                     }
                 }
                 logger.info("Result size: {}, content: {}", content.length(), content);
@@ -125,52 +102,49 @@ public class GeoDataStoreApiStepdefs {
         }
     }
 
+    /**
+     * Retrieve dataset identifier from previous scenario
+     * @throws Throwable
+     */
     @Given("^The identifier of the uploaded dataset is known$")
     public void the_identifier_of_the_uploaded_dataset_is_known() throws Throwable {
-        if ((null == lastIdentifier) || (lastIdentifier.length() == 0)) {
-            throw new Exception("No identifier found");
+        testclient = new TestClient();
+        if (useProxy) {
+            testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
         }
+        Assert.assertNotNull(testclient);
+        lastIdentifier = context.getDataSetIdentifier();
+        Assert.assertNotNull(lastIdentifier);
+        Assert.assertNotEquals(0, lastIdentifier.length());
     }
 
     @When("^I add descriptive metadata with status draft$")
     public void i_add_descriptive_metadata_with_status_draft() throws Throwable {
         // Fill metadata record with some values
-        MetaData metadata = new MetaData();
-        metadata.setTitle("Feature: Geodatastore");
-        metadata.setSummary("This is a dataset uploaded for test purposes");
-        metadata.setKeywords("test, upload");
-        metadata.setTopicCategories("NGR");
-        metadata.setLocation("Apeldoorn");
-        //md.setLineage("vervallen");
-        metadata.setResolution(2000);
+        MetaDataRequest mdrequest = new MetaDataRequest();
+        String jsonString;
+        mdrequest.setTitle("TEST METADATA TITLE");
+        mdrequest.setSummary("TEST METADATA SUMMARY this is the summary of the test metadata");
+        mdrequest.addKeyword("TEST");
+        mdrequest.addKeyword("METADATA");
+        mdrequest.addTopicCategorie("Gezondheid");
+        mdrequest.addTopicCategorie("Grenzen");
+        mdrequest.setLocation("Apeldoorn");
+        mdrequest.setLineage("Lineage");
+        mdrequest.setLicense("Public Domain");
+        mdrequest.setResolution(1000);
+        JsonConverter jc = new JsonConverter();
+        jsonString = jc.getObjectJson(mdrequest);
 
-        // write metadata to file
-        String testFile = "somefile.txt";
-        File file = new File(testFile);
-        try {
-            // if file doesnt exists, then create it
-            if (!file.exists()) {
-                file.createNewFile();
-            }
+        testclient.setMetaData(jsonString);
+        testclient.setPublish(false);
 
-            FileWriter fw = new FileWriter(file.getAbsoluteFile());
-            BufferedWriter bw = new BufferedWriter(fw);
-            JsonConverter jcon = new JsonConverter();
+        logger.info("Send metadata file");
 
-            bw.write(jcon.getObjectJson(metadata));
-            bw.close();
-
-        } catch (Exception e) {
-            logger.error("Couldnot create file: {}", testFile, e);
-            throw new Exception("Couldnot create file", e);
-        }
-
-        logger.info("Upload metadata file");
-        testclient.getFileEntity(testFile);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier;
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
-        testclient.setAddFile(false);
+        testclient.setPublish(false);
     }
 
     @Then("^I get the defined meta data back$")
@@ -179,38 +153,20 @@ public class GeoDataStoreApiStepdefs {
         HttpEntity entity = null;
 
         try {
-            md = null;
             entity = response.getEntity();
             if (entity != null) {
                 String content = EntityUtils.toString(entity);
                 resultText = new StringBuffer(content);
                 if (resultText.toString().length() > 0) {
                     if (response.getStatusLine().getStatusCode() == 200) {
-                        md = new MetaData();
-                        JsonConverter json = new JsonConverter();
+
 
                         json.loadString(resultText.toString());
                         lastIdentifier = json.getStringNode("identifier");
+                        context.setResultJson(resultText.toString());
                         logger.info("Identifier: {}", lastIdentifier);
                         // fill metadata with received metadata
-
-                        md.setTitle(json.getStringNode("title"));
-                        md.setSummary(json.getStringNode("summary"));
-                        md.setKeywords(json.getStringNode("keywords"));
-                        md.setLocation(json.getStringNode("location"));
-                        //  md.setLineage(json.getStringNode("lineage"));
-                        md.setLicense(json.getStringNode("license"));
-                        md.setResolution(Integer.parseInt(json.getStringNode("resolution")));
-                        md.setIdentifier(json.getStringNode("identifier"));
-                        md.setUrl(json.getStringNode("url"));
-                        md.setExtent(json.getStringNode("extent"));
-                        md.setError(json.getStringNode("error"));
-                        md.setMessages(json.getStringNode("messages"));
-                        md.setStatus(json.getStringNode("status"));
-                        md.setFiletype(json.getStringNode("fileType"));
-                        md.setChangeDate(json.getStringNode("changeDate"));
-                        md.setValid(json.getStringNode("valid"));
-
+                        mdresponse = convertToMetaDataReponse(resultText.toString());
                     }
                 }
                 logger.info("Result size: {}, content: {}", content.length(), content);
@@ -224,7 +180,12 @@ public class GeoDataStoreApiStepdefs {
 
     @Given("^The metadata are uploaded and valid$")
     public void the_metadata_are_uploaded_and_valid() throws Throwable {
-        if (md == null) {
+        json.loadString(context.getResultJson());
+        lastIdentifier = context.getDataSetIdentifier();
+        logger.info("Identifier: {}", lastIdentifier);
+        // fill metadata with received metadata
+        mdresponse = convertToMetaDataReponse(context.getResultJson());
+        if (mdresponse == null) {
             throw new Exception("No medatadata defined");
         }
     }
@@ -233,7 +194,11 @@ public class GeoDataStoreApiStepdefs {
     public void i_publish_the_uploaded_dataset_with_valid_metadata() throws Throwable {
 
         logger.info("Upload metadata file");
-
+        testclient = new TestClient();
+        if (useProxy) {
+            testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        }
+        Assert.assertNotNull(testclient);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         testclient.setPublish(true);
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier;
@@ -247,15 +212,13 @@ public class GeoDataStoreApiStepdefs {
         HttpEntity entity = null;
 
         try {
-            md = null;
+
             entity = response.getEntity();
             if (entity != null) {
                 String content = EntityUtils.toString(entity);
                 resultText = new StringBuffer(content);
                 if (resultText.toString().length() > 0) {
                     if (response.getStatusLine().getStatusCode() == 200) {
-                        md = new MetaData();
-                        JsonConverter json = new JsonConverter();
 
                         json.loadString(resultText.toString());
                         lastIdentifier = json.getStringNode("identifier");
@@ -279,37 +242,78 @@ public class GeoDataStoreApiStepdefs {
 
     @Given("^The dataset is successfully published$")
     public void the_dataset_is_successfully_published() throws Throwable {
-        if (md.getStatus().equals("published")) {
-            throw new Exception("No published dataset");
-        }
+        json.loadString(context.getResultJson());
+        lastIdentifier = context.getDataSetIdentifier();
+        logger.info("Identifier: {}", lastIdentifier);
+        // fill metadata with received metadata
+        mdresponse = convertToMetaDataReponse(context.getResultJson());
+        Assert.assertNotNull(mdresponse);
+        Assert.assertEquals("published", mdresponse.getStatus());
     }
 
     @When("^I download the published dataset$")
     public void i_download_the_published_dataset() throws Throwable {
-        String download_url = md.getUrl();
+        String download_url = mdresponse.getUrl();
+        logger.info("Download from dataset {} file {}", mdresponse.getIdentifier(), download_url);
+        testclient = new TestClient();
+        if (useProxy) {
+            testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        }
+        Assert.assertNotNull(testclient);
         testclient.addHeader("Accept", "*/*;");
         response = testclient.sendRequest(download_url, TestClient.HTTPGET);
     }
 
     @Then("^I get the random uploaded file$")
     public void i_get_the_random_uploaded_file() throws Throwable {
-        if (null == response) {
-            throw new Exception("No response object available");
-        }
-        if (response.getStatusLine().getStatusCode() != 200) {
-            throw new Exception("Error in upload random file");
-        }
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200,response.getStatusLine().getStatusCode());
     }
 
     @When("^I delete the dataset$")
     public void i_delete_the_dataset() throws Throwable {
 
         logger.info("Delete dataset");
-
+        testclient = new TestClient();
+        if (useProxy) {
+            testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        }
+        Assert.assertNotNull(testclient);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier;
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPDELETE);
     }
 
 
+    private MetaDataResponse convertToMetaDataReponse(final String jsonString) {
+        json.loadString(jsonString);
+        MetaDataResponse mdr = new MetaDataResponse();
+        // fill metadata with received metadata
+
+        mdr.setTitle(json.getStringNode("title"));
+        mdr.setSummary(json.getStringNode("summary"));
+        mdr.setKeywords(json.getStringArray("keywords"));
+        mdr.setTopicCategories(json.getStringArray("topicCategories"));
+        mdr.setLocation(json.getStringNode("location"));
+        mdr.setLineage(json.getStringNode("lineage"));
+        mdr.setLicense(json.getStringNode("license"));
+        String res = json.getStringNode("resolution");
+        if ((null == res) || (res.length()==0) || (res.equals("null"))) {
+            res = "0";
+        }
+        mdr.setResolution(Integer.parseInt(res));
+        mdr.setIdentifier(json.getStringNode("identifier"));
+        mdr.setUrl(json.getStringNode("url"));
+        mdr.setExtent(json.getStringNode("extent"));
+        mdr.setError(json.getStringNode("error"));
+        mdr.setMessages(json.getStringArray("messages"));
+        mdr.setStatus(json.getStringNode("status"));
+        mdr.setFiletype(json.getStringNode("fileType"));
+        mdr.setLocationUri(json.getStringNode("locationUri"));
+//        mdr.setThumbnail(json.getStringNode("thumbnail"));
+        mdr.setChangeDate(json.getStringNode("changeDate"));
+        mdr.setValid(json.getStringNode("valid"));
+
+        return mdr;
+    }
 }

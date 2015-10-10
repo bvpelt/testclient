@@ -20,14 +20,16 @@ public class MetaDataResponse {
     private int resolution;
     private String identifier;
     private String url;
-    private String thumbnail;
     private String extent;
     private String error;
-    private String messages;
+    private List<String> messageList = new ArrayList<String>();
+    private String[] messages;
     private String status;
-    private String valid;
     private String filetype;
+    private String locationUri;
+    private String thumbnail;
     private String changeDate;
+    private String valid;
 
     public MetaDataResponse() {
     }
@@ -68,6 +70,7 @@ public class MetaDataResponse {
     public void addKeyword(final String keyword) {
         this.keywordList.add(keyword);
     }
+
     public String[] getTopicCategories() {
         topicCategories = new String[topicCategoriesList.size()];
         int i = 0;
@@ -161,12 +164,25 @@ public class MetaDataResponse {
         this.error = error;
     }
 
-    public String getMessages() {
+    public String[] getMessages() {
+        messages = new String[messageList.size()];
+        int i = 0;
+        for (String msg: messageList) {
+            messages[i++] = msg;
+        }
         return messages;
     }
 
-    public void setMessages(final String messages) {
+    public void setMessages(final String[] messages) {
         this.messages = messages;
+        messageList = new ArrayList<String>();
+        for (String msg: messages) {
+            messageList.add(msg);
+        }
+    }
+
+    public void addMessage(final String message) {
+        this.messageList.add(message);
     }
 
     public String getStatus() {
@@ -191,6 +207,14 @@ public class MetaDataResponse {
 
     public void setFiletype(final String filetype) {
         this.filetype = filetype;
+    }
+
+    public String getLocationUri() {
+        return locationUri;
+    }
+
+    public void setLocationUri(final String locationUri) {
+        this.locationUri = locationUri;
     }
 
     public String getChangeDate() {

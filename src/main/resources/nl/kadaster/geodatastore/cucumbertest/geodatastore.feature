@@ -13,7 +13,7 @@ Feature: Geodatastore api
     And I get the defined meta data back
 
   Scenario: Publish a previously uploaded random file with valid metadata
-    Given The metadata are uploaded and valid
+   Given The metadata are uploaded and valid
     When I publish the uploaded dataset with valid metadata
     Then I get a http success status
     And I get the defined meta data with status published back
