@@ -21,7 +21,7 @@ public class GeoDataStoreApiStepdefs {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreApiStepdefs.class);
 
     private static boolean usePdok = true;
-    private boolean useProxy = false;
+    private boolean useProxy = true;
 
 
     private static Configuration conf = new Configuration(usePdok);
@@ -48,6 +48,17 @@ public class GeoDataStoreApiStepdefs {
         }
         Assert.assertNotNull(testclient);
     }
+
+    @When("^I ask for known codelists$")
+    public void i_ask_for_known_codelists() throws Throwable {
+        logger.info("I ask for known codelists");
+
+        testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+        response = testclient.sendRequest(baseCodeListUrl, TestClient.HTTPGET);
+
+        Assert.assertNotNull(response);
+    }
+
 
     @When("^I upload a random file$")
     public void i_upload_a_random_file() throws Throwable {
@@ -127,14 +138,39 @@ public class GeoDataStoreApiStepdefs {
         mdrequest.setSummary("TEST METADATA SUMMARY this is the summary of the test metadata");
         mdrequest.addKeyword("TEST");
         mdrequest.addKeyword("METADATA");
-        mdrequest.addTopicCategorie("Gezondheid");
-        mdrequest.addTopicCategorie("Grenzen");
-        mdrequest.setLocation("Apeldoorn");
+        mdrequest.addTopicCategorie("health"); // Gezondheid
+        mdrequest.addTopicCategorie("boundaries"); // Grenzen
+        mdrequest.setLocation("veenendaal");
         mdrequest.setLineage("Lineage");
-        mdrequest.setLicense("Public Domain");
+        mdrequest.setLicense("PublicDomain"); // Public domain
         mdrequest.setResolution(1000);
         JsonConverter jc = new JsonConverter();
         jsonString = jc.getObjectJson(mdrequest);
+
+/*
+        {
+          "title":"TEST METADATA TITLE",
+          "summary":"TEST METADATA SUMMARY this is the summary of the test metadata",
+          "keywords":["TEST","METADATA","gezondheid","grenzen"],
+          "topicCategories":["boundaries"],
+          "location":"veenendaal",
+          "lineage":"Lineage",
+          "license":"PublicDomain",
+          "resolution":"1000",
+
+          "identifier":"5a47ada9-823e-4a75-ac10-0b6d71ec9dc7",
+          "url":"https://test.geodatastore.pdok.nl:443/geonetwork/id/dataset/5a47ada9-823e-4a75-ac10-0b6d71ec9dc7/somefile.txt",
+          "extent":null,
+          "error":false,
+          "messages":[],
+          "status":"draft",
+          "fileType":null,
+          "locationUri":"http://geodatastore.pdok.nl/registry/location#Apeldoorn_municipal",
+          "changeDate":"2015-10-13T12:02:37",
+          "valid":false,
+          "$publishable":true,
+          "topicCategory":"boundaries"}
+     */
 
         testclient.setMetaData(jsonString);
         testclient.setPublish(false);
@@ -193,7 +229,7 @@ public class GeoDataStoreApiStepdefs {
     @When("^I publish the uploaded dataset with valid metadata$")
     public void i_publish_the_uploaded_dataset_with_valid_metadata() throws Throwable {
 
-        logger.info("Upload metadata file");
+        logger.info("Uploaded dataset with valid metadata");
         testclient = new TestClient();
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
@@ -217,6 +253,7 @@ public class GeoDataStoreApiStepdefs {
             if (entity != null) {
                 String content = EntityUtils.toString(entity);
                 resultText = new StringBuffer(content);
+                context.setResultJson(resultText.toString());
                 if (resultText.toString().length() > 0) {
                     if (response.getStatusLine().getStatusCode() == 200) {
 

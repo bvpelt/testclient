@@ -16,13 +16,13 @@ public class Configuration {
     private static String ngr_host = "ngr3.geocat.net";
 
     private static String pdok_scheme = "https";
-    private static String pdok_username = "WPM";
+    private static String pdok_username = "NLR";
     private static String pdok_password = "testtest";
     private static String pdok_host = "test.geodatastore.pdok.nl";
     private static long timeOut = 10000; //ms
 
     private static String fullurl = null;
-    private boolean usePdok = false;
+    private boolean usePdok = true;
 
     public Configuration(boolean usePdok) {
         this.usePdok = usePdok;
