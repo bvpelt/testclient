@@ -60,3 +60,6 @@ Certificate fingerprint (SHA1): 5B:90:99:30:C0:29:0C:34:59:BD:8D:63:D9:2B:B4:1C:
 ### Rest
 + httpclient components [Documentation](https://hc.apache.org/)
 + sonatype nexus [Search maven dependencies](https://repository.sonatype.org/)
+
+### Icons
++ Icons downloaded from [http://iconiza.com/downloads.html](http://iconiza.com/downloads.html)

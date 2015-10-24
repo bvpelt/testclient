@@ -22,6 +22,7 @@ public class GeoDataStoreTest {
     private static String baseCodeListUrl = baseUrl + "/registry";
     private int failures = 0;
     private int tests = 0;
+    private boolean useProxy = false;
     private boolean verbose = true;
     private StringBuffer resultText = null;
     private String lastIdentifier;
@@ -42,8 +43,9 @@ public class GeoDataStoreTest {
         logger.info("Start tests");
 
         TestClient testClient = new TestClient();
-        testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
-
+        if (useProxy) {
+            testClient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+        }
         // Good situations
         // The order of the tests is vital, don't change
 

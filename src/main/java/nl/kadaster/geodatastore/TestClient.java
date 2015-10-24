@@ -17,10 +17,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.*;
 import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +66,7 @@ public class TestClient {
     // option to add a file
     private boolean addRandomFile = false;
     private boolean addFile = false;
+    private boolean addThumbnail = false;
     private boolean addMetaData = false;
     private FileBody fileEntity;
 
@@ -108,6 +106,7 @@ public class TestClient {
         headers = null;
         // option to add a file
         addRandomFile = false;
+        addThumbnail = false;
 
         // The keystore password (used for TLS connections and proxy)
         keystorepwd = "geodatastore";
@@ -229,11 +228,11 @@ public class TestClient {
                 }
             }
 
-            if (method.toUpperCase().equals(HTTPGET)) {
+            //if (method.toUpperCase().equals(HTTPGET)) {
                 if ((query != null) && (query.length() > 0)) {
                     path += "?" + query;
                 }
-            }
+            //}
 
             if (user.length() > 0) {
                 response = sendRequest(scheme, host, iport, path, method, user, pwd);
@@ -247,6 +246,7 @@ public class TestClient {
             target = null;
             addFile = false;
             addRandomFile = false;
+            addThumbnail = false;
             fileEntity = null;
             headers = null;
             publish = null;
@@ -396,6 +396,11 @@ public class TestClient {
             mb.addPart("metadata", metaDataEntity);
         }
 
+        if (addThumbnail) {
+            logger.info("Add thumbnail file");
+            FileBody thumbnailData = getThumbnail();
+            mb.addPart("thumbnail", thumbnailData);
+        }
         reqEntity = mb.build();
 
         if (httpRequest instanceof HttpPost) {
@@ -403,6 +408,7 @@ public class TestClient {
         }
         return httpRequest;
     }
+
 
     private void createBasicAuthContext(final HttpHost target) {
         credentialsProvider = new BasicCredentialsProvider();
@@ -436,7 +442,11 @@ public class TestClient {
         try {
             logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", scheme, useProxy, useBasicAuthentication);
 
+            boolean isSecure = false;
+            SSLConnectionSocketFactory sslsf = null;
+
             if (scheme.equals(HTTPS)) {
+                isSecure = true;
                 // Trust own CA and all self-signed certs
                 SSLContext sslcontext = SSLContexts.custom()
                         .loadTrustMaterial(new File("proxykeystore.jks"), keystorepwd.toCharArray(),
@@ -444,12 +454,12 @@ public class TestClient {
                         .build();
 
                 // Allow TLSv1 protocol only
-                SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
+                sslsf = new SSLConnectionSocketFactory(
                         sslcontext,
                         new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"},
                         null,
                         SSLConnectionSocketFactory.getDefaultHostnameVerifier());
-
+                /*
 
                 // Only if scheme is https and use Proxy the certificate store should be loaded!!!
                 if (useBasicAuthentication) {
@@ -510,7 +520,26 @@ public class TestClient {
                                 .build();
                     }
                 }
+                */
             }
+
+            // Alternative start
+            HttpClientBuilder clientBuilder = HttpClients.custom();
+
+            if (isSecure) {
+                clientBuilder = clientBuilder.setSSLSocketFactory(sslsf);
+            }
+
+            if (useBasicAuthentication) {
+                clientBuilder = clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+            }
+
+            if (useProxy) {
+                clientBuilder = clientBuilder.setProxy(proxy);
+            }
+
+            httpclient = clientBuilder.build();
+            // Alternative end
 
         } catch (Exception e) {
             logger.error("Error creating http client", e);
@@ -543,6 +572,27 @@ public class TestClient {
         entity = new FileBody(genFile);
 
         return entity;
+    }
+
+    private FileBody getThumbnail() {
+        FileBody entity = null;
+        File genFile = getThumbnailFile();
+        entity = new FileBody(genFile);
+
+        return entity;
+    }
+
+    private File getThumbnailFile() {
+        String thumbnailFileName = "xls.png";
+        File file = null;
+
+        try {
+            ClassLoader classLoader = getClass().getClassLoader();
+            file = new File(classLoader.getResource(thumbnailFileName).getFile());
+        } catch (Exception e) {
+            logger.error("Couldnot find file: {}", thumbnailFileName, e);
+        }
+        return file;
     }
 
     private File getNewFile() {
@@ -652,6 +702,14 @@ public class TestClient {
 
     public void setAddFile(final boolean addFile) {
         this.addFile = addFile;
+    }
+
+    public boolean isAddThumbnail() {
+        return addThumbnail;
+    }
+
+    public void setAddThumbnail(final boolean addThumbnail) {
+        this.addThumbnail = addThumbnail;
     }
 
 

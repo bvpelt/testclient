@@ -14,6 +14,8 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
+
 /**
  * Created by bvpelt on 10/3/15.
  */
@@ -37,25 +39,28 @@ public class GeoDataStoreApiStepdefs {
     private MetaDataResponse mdresponse = new MetaDataResponse();
     private JsonConverter json = new JsonConverter();
     private GeoDataStoreApiContext context = GeoDataStoreApiContext.getInstance();
+    private  UUID uuid = null;
 
 
     @Given("^There is a testclient$")
     public void there_is_a_testclient() throws Throwable {
-        logger.info("Create testclient");
+        uuid = UUID.randomUUID();
+        logger.info("There is a testclient, run: {}", uuid.toString());
         testclient = new TestClient();
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
         }
+        context.setUuid(uuid);
         Assert.assertNotNull(testclient);
     }
 
     @When("^I upload a random file$")
     public void i_upload_a_random_file() throws Throwable {
-        logger.info("Upload random file");
+        logger.info("I upload a random file, run: {}", uuid.toString());
 
         testclient.setAddRandomFile(true);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-        response = testclient.sendRequest(baseDataSetUrl, TestClient.HTTPPOST);
+        response = testclient.sendRequest(baseDataSetUrl + "?" + "cucumberid=" + uuid.toString(), TestClient.HTTPPOST);
 
         testclient.setAddRandomFile(false);
         Assert.assertNotNull(response);
@@ -69,7 +74,7 @@ public class GeoDataStoreApiStepdefs {
 
     @Then("^I get the identifier of the uploaded dataset$")
     public void i_get_the_identifier_of_the_uploaded_dataset() throws Throwable {
-        logger.info("Extract last identifier");
+        logger.info("I get the identifier of the uploaded dataset, run: {}", uuid.toString());
         HttpEntity entity = null;
 
         try {
@@ -108,6 +113,8 @@ public class GeoDataStoreApiStepdefs {
      */
     @Given("^The identifier of the uploaded dataset is known$")
     public void the_identifier_of_the_uploaded_dataset_is_known() throws Throwable {
+        uuid = context.getUuid();
+        logger.info("The identifier of the uploaded dataset is known, run: {}", uuid.toString());
         testclient = new TestClient();
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
@@ -120,6 +127,7 @@ public class GeoDataStoreApiStepdefs {
 
     @When("^I add descriptive metadata with status draft$")
     public void i_add_descriptive_metadata_with_status_draft() throws Throwable {
+        logger.info("I add descriptive metadata with status draft, run: {}", uuid.toString());
         // Fill metadata record with some values
         MetaDataRequest mdrequest = new MetaDataRequest();
         String jsonString;
@@ -142,14 +150,14 @@ public class GeoDataStoreApiStepdefs {
         logger.info("Send metadata file");
 
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-        String datasetUrl = baseDataSetUrl + "/" + lastIdentifier;
+        String datasetUrl = baseDataSetUrl + "/" + lastIdentifier + "?"  + "cucumberid=" + uuid.toString();
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
         testclient.setPublish(false);
     }
 
     @Then("^I get the defined meta data back$")
     public void i_get_the_defined_meta_data_back() throws Throwable {
-        logger.info("Extract last identifier");
+        logger.info("I get the defined meta data back, run: {}", uuid.toString());
         HttpEntity entity = null;
 
         try {
@@ -180,6 +188,8 @@ public class GeoDataStoreApiStepdefs {
 
     @Given("^The metadata are uploaded and valid$")
     public void the_metadata_are_uploaded_and_valid() throws Throwable {
+        uuid = context.getUuid();
+        logger.info("The metadata are uploaded and valid, run: {}", uuid.toString());
         json.loadString(context.getResultJson());
         lastIdentifier = context.getDataSetIdentifier();
         logger.info("Identifier: {}", lastIdentifier);
@@ -192,8 +202,7 @@ public class GeoDataStoreApiStepdefs {
 
     @When("^I publish the uploaded dataset with valid metadata$")
     public void i_publish_the_uploaded_dataset_with_valid_metadata() throws Throwable {
-
-        logger.info("Upload metadata file");
+        logger.info("I publish the uploaded dataset with valid metadata, run: {}", uuid.toString());
         testclient = new TestClient();
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
@@ -201,14 +210,14 @@ public class GeoDataStoreApiStepdefs {
         Assert.assertNotNull(testclient);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         testclient.setPublish(true);
-        String datasetUrl = baseDataSetUrl + "/" + lastIdentifier;
+        String datasetUrl = baseDataSetUrl + "/" + lastIdentifier + "?"  + "cucumberid=" + uuid.toString();
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
         testclient.setPublish(false);
     }
 
     @Then("^I get the defined meta data with status published back$")
     public void i_get_the_defined_meta_data_with_status_published_back() throws Throwable {
-        logger.info("Check status");
+        logger.info("I get the defined meta data with status published back, run: {}", uuid.toString());
         HttpEntity entity = null;
 
         try {
@@ -242,6 +251,8 @@ public class GeoDataStoreApiStepdefs {
 
     @Given("^The dataset is successfully published$")
     public void the_dataset_is_successfully_published() throws Throwable {
+        uuid = context.getUuid();
+        logger.info("The dataset is successfully published, run: {}", uuid.toString());
         json.loadString(context.getResultJson());
         lastIdentifier = context.getDataSetIdentifier();
         logger.info("Identifier: {}", lastIdentifier);
@@ -253,6 +264,7 @@ public class GeoDataStoreApiStepdefs {
 
     @When("^I download the published dataset$")
     public void i_download_the_published_dataset() throws Throwable {
+        logger.info("I download the published dataset, run: {}", uuid.toString());
         String download_url = mdresponse.getUrl();
         logger.info("Download from dataset {} file {}", mdresponse.getIdentifier(), download_url);
         testclient = new TestClient();
@@ -266,14 +278,15 @@ public class GeoDataStoreApiStepdefs {
 
     @Then("^I get the random uploaded file$")
     public void i_get_the_random_uploaded_file() throws Throwable {
+        logger.info("I get the random uploaded file, run: {}", uuid.toString());
         Assert.assertNotNull(response);
         Assert.assertEquals(200,response.getStatusLine().getStatusCode());
     }
 
     @When("^I delete the dataset$")
     public void i_delete_the_dataset() throws Throwable {
-
-        logger.info("Delete dataset");
+        uuid = context.getUuid();
+        logger.info("I delete the dataset, run: {}", uuid.toString());
         testclient = new TestClient();
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);

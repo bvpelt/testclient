@@ -1,5 +1,7 @@
 package nl.kadaster.geodatastore.cucumbertest;
 
+import java.util.UUID;
+
 /**
  * Created by bvpelt on 10/10/15.
  */
@@ -10,6 +12,9 @@ public class GeoDataStoreApiContext {
     private String dataSetIdentifier;
 
     private String resultJson;
+
+
+    private UUID uuid;
 
     protected GeoDataStoreApiContext() {
 
@@ -41,5 +46,13 @@ public class GeoDataStoreApiContext {
 
     public void setResultJson(final String resultJson) {
         this.resultJson = resultJson;
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(final UUID uuid) {
+        this.uuid = uuid;
     }
 }
