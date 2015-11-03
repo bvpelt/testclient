@@ -19,10 +19,10 @@ import java.util.concurrent.TimeUnit;
 public class GeoDatastoreAppStepdefs {
     private static Logger logger = LoggerFactory.getLogger(GeoDatastoreAppStepdefs.class);
 
-    private static boolean usePdok = false;
+    private static boolean usePdok = true;
     private static Configuration conf = new Configuration(usePdok);
     private static String fullurl = conf.getFullUrl();
-    private static String baseUrl = fullurl + "/geonetwork/";
+    private static String baseUrl = fullurl + "/";
 
     private WebDriver driver = null;
 

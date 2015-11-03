@@ -273,6 +273,7 @@ public class TestClient {
             if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
                 throw new Exception("For basic authentication username and password are required");
             } else {
+                logger.info("Using basic authentication for user: {}", username);
                 this.username = username;
                 this.password = password;
                 this.useBasicAuthentication = true;

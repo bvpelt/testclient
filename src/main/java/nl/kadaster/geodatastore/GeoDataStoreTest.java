@@ -16,13 +16,13 @@ import java.io.FileWriter;
 public class GeoDataStoreTest {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreTest.class);
     //private static String host = "http://test1:password@ngr3.geocat.net";
-    private static String host = "https://WPM:testtest@test.geodatastore.pdok.nl";
-    private static String baseUrl = host + "/geonetwork/api/v1";
+    private static String host = "https://NLR:testtest@test.geodatastore.pdok.nl";
+    private static String baseUrl = host + "/api/v1";
     private static String baseDataSetUrl = baseUrl + "/dataset";
     private static String baseCodeListUrl = baseUrl + "/registry";
     private int failures = 0;
     private int tests = 0;
-    private boolean useProxy = false;
+    private boolean useProxy = true;
     private boolean verbose = true;
     private StringBuffer resultText = null;
     private String lastIdentifier;
