@@ -23,7 +23,7 @@ public class GeoDataStoreApiStepdefs {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreApiStepdefs.class);
 
     private static boolean usePdok = true;
-    private boolean useProxy = true;
+    private boolean useProxy = false;
 
 
     private static Configuration conf = new Configuration(usePdok);

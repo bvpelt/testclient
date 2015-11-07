@@ -267,6 +267,25 @@ public class TestClient {
         }
     }
 
+    private void createBasicAuthContext(final HttpHost target) {
+        credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(
+                new AuthScope(target.getHostName(),
+                target.getPort()),
+                new UsernamePasswordCredentials(username, password));
+
+        // Create AuthCache instance
+        AuthCache authCache = new BasicAuthCache();
+
+        // Generate BASIC scheme object and add it to the local
+        // auth cache
+        BasicScheme basicAuth = new BasicScheme();
+        authCache.put(target, basicAuth);
+
+        // Add AuthCache to the execution context
+        localContext = HttpClientContext.create();
+        localContext.setAuthCache(authCache);
+    }
 
     private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path, final String method, final String username, final String password) throws Exception {
         try {
@@ -297,6 +316,21 @@ public class TestClient {
         return response;
     }
 
+    private URI getUri(final String scheme, final String host, final String path) throws Exception {
+        URI uri = null;
+
+        try {
+            uri = new URIBuilder()
+                    .setScheme(scheme)
+                    .setHost(host)
+                    .setPath(path)
+                    .build();
+        } catch (Exception e) {
+            throw new Exception("Error building uri", e);
+        }
+        return uri;
+    }
+
     private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path, final String method) {
         CloseableHttpResponse response = null;
         URI uri = null;
@@ -325,21 +359,6 @@ public class TestClient {
         return response;
     }
 
-    private URI getUri(final String scheme, final String host, final String path) throws Exception {
-        URI uri = null;
-
-        try {
-            uri = new URIBuilder()
-                    .setScheme(scheme)
-                    .setHost(host)
-                    .setPath(path)
-                    .build();
-        } catch (Exception e) {
-            throw new Exception("Error building uri", e);
-        }
-        return uri;
-    }
-
     private HttpRequestBase getMessage(final URI uri, final String method) throws Exception {
         HttpRequestBase httpRequest = null;
 
@@ -353,10 +372,9 @@ public class TestClient {
             httpRequest = new HttpGet(uri);
         }
         if (httpRequest == null) {
-            throw new Exception("Invalid method specified. Expected GET or POST, received: " + method);
+            throw new Exception("Unknown method specified. Expected GET, POST or DELETE received: " + method);
         }
 
-        // httpRequest.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         if (headers != null) {
             Set<String> keys = headers.keySet();
             Iterator<String> it = keys.iterator();
@@ -402,33 +420,16 @@ public class TestClient {
             FileBody thumbnailData = getThumbnail();
             mb.addPart("thumbnail", thumbnailData);
         }
+
         reqEntity = mb.build();
 
         if (httpRequest instanceof HttpPost) {
             ((HttpPost) httpRequest).setEntity(reqEntity);
         }
+
         return httpRequest;
     }
 
-
-    private void createBasicAuthContext(final HttpHost target) {
-        credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(
-                new AuthScope(target.getHostName(), target.getPort()),
-                new UsernamePasswordCredentials(username, password));
-
-        // Create AuthCache instance
-        AuthCache authCache = new BasicAuthCache();
-
-        // Generate BASIC scheme object and add it to the local
-        // auth cache
-        BasicScheme basicAuth = new BasicScheme();
-        authCache.put(target, basicAuth);
-
-        // Add AuthCache to the execution context
-        localContext = HttpClientContext.create();
-        localContext.setAuthCache(authCache);
-    }
 
     /**
      * Get a parameterized http client, based on usage off https and useProxy setting
@@ -460,68 +461,6 @@ public class TestClient {
                         new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"},
                         null,
                         SSLConnectionSocketFactory.getDefaultHostnameVerifier());
-                /*
-
-                // Only if scheme is https and use Proxy the certificate store should be loaded!!!
-                if (useBasicAuthentication) {
-
-                    if (useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setProxy(proxy)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                    if (!useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                } else {
-                    if (useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .setProxy(proxy)
-                                .build();
-                    }
-
-
-                    if (!useProxy) {
-                        httpclient = HttpClients.custom()
-                                .setSSLSocketFactory(sslsf)
-                                .build();
-                    }
-                }
-            } else {
-                // scheme not equal to HTTPS, assumes http!!!!
-                if (useBasicAuthentication) {
-
-                    if (useProxy && useBasicAuthentication) {
-                        httpclient = HttpClients.custom()
-                                .setProxy(proxy)
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-
-                    if (!useProxy && useBasicAuthentication) {
-                        httpclient = HttpClients.custom()
-                                .setDefaultCredentialsProvider(credentialsProvider)
-                                .build();
-                    }
-                } else {
-                    if (useProxy && !useBasicAuthentication) {
-                        httpclient = HttpClients.custom()
-                                .setProxy(proxy)
-                                .build();
-                    }
-
-                    if (!useProxy && !useBasicAuthentication) {
-                        httpclient = HttpClients.custom()
-                                .build();
-                    }
-                }
-                */
             }
 
             // Alternative start
