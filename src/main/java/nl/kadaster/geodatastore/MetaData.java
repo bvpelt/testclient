@@ -9,6 +9,7 @@ public class MetaData {
     private String keywords;
     private String topicCategories;
     private String location;
+    private String locationUri;
     private String lineage;
     private String license;
     private int resolution;
@@ -64,6 +65,14 @@ public class MetaData {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public void setLocationUri(String locationUri) {
+        this.locationUri = locationUri;
+    }
+
+    public String getLocationUri() {
+        return locationUri;
     }
 
     public String getLineage() {

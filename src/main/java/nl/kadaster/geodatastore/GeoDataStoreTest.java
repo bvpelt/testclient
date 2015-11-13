@@ -182,7 +182,7 @@ public class GeoDataStoreTest {
             mdrequest.addKeyword("METADATA");
             mdrequest.addTopicCategorie("Gezondheid");
             mdrequest.addTopicCategorie("Grenzen");
-            mdrequest.setLocation("Apeldoorn");
+            //mdrequest.setLocation("Apeldoorn");
             mdrequest.setLineage("Lineage");
             mdrequest.setLicense("Public Domain");
             mdrequest.setResolution(1000);

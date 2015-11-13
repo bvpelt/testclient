@@ -14,6 +14,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.UUID;
 
 /**
@@ -23,7 +24,7 @@ public class GeoDataStoreApiStepdefs {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreApiStepdefs.class);
 
     private static boolean usePdok = true;
-    private boolean useProxy = false;
+    private boolean useProxy = true;
 
 
     private static Configuration conf = new Configuration(usePdok);
@@ -148,9 +149,10 @@ public class GeoDataStoreApiStepdefs {
         mdrequest.addKeyword("TEST");
         mdrequest.addKeyword("METADATA");
         mdrequest.addTopicCategorie("biota");
-        mdrequest.setLocation("Apeldoorn (woonplaats)");
+       // mdrequest.setLocation("Stampersgat (woonplaats)");
+        mdrequest.setLocationUri("http://geodatastore.pdok.nl/registry/location#Stampersgat_residence");
         mdrequest.setLineage("Bron van de gegevens is onbekend");
-        mdrequest.setLicense("0"); // == Public Domain
+        mdrequest.setLicense("http://creativecommons.org/licenses/by/3.0/nl/"); // == Public Domain
         mdrequest.setResolution(1000);
         JsonConverter jc = new JsonConverter();
         jsonString = jc.getObjectJson(mdrequest);
@@ -239,7 +241,7 @@ public class GeoDataStoreApiStepdefs {
                 resultText = new StringBuffer(content);
                 if (resultText.toString().length() > 0) {
                     if (response.getStatusLine().getStatusCode() == 200) {
-
+                        context.setResultJson(resultText.toString());
                         json.loadString(resultText.toString());
                         lastIdentifier = json.getStringNode("identifier");
                         logger.info("Identifier: {}", lastIdentifier);
@@ -273,10 +275,37 @@ public class GeoDataStoreApiStepdefs {
         Assert.assertEquals("published", mdresponse.getStatus());
     }
 
+    private String checkedUrl(final String downloadUrl) {
+        String result;
+
+        URI uri = URI.create(downloadUrl);
+
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+        String path = uri.getPath();
+        String authority = uri.getAuthority();
+        String query = uri.getQuery();
+        String fragment = uri.getFragment();
+
+        String[] hostparts = host.split(":");
+
+        result = scheme + "://" + hostparts[0] + path;
+
+        return result;
+    }
+
     @When("^I download the published dataset$")
     public void i_download_the_published_dataset() throws Throwable {
         logger.info("I download the published dataset, run: {}", uuid.toString());
         String download_url = mdresponse.getUrl();
+
+        // if the url contains a portnumber, remove it. otherwise ssl can't check web site
+        // geodatastore returns sometheing like
+        //   https://test.geodatastore.pdok.nl:443/id/dataset/f69180a3-ebac-4af8-a73d-8b7897d6cded
+        // this should be converted
+        //   https://test.geodatastore.pdok.nl/id/dataset/f69180a3-ebac-4af8-a73d-8b7897d6cded
+        String url = checkedUrl(download_url);
+        logger.info("Cleaned url, download_url: {}, url: {}", download_url, url);
         logger.info("Download from dataset {} file {}", mdresponse.getIdentifier(), download_url);
         testclient = new TestClient();
         if (useProxy) {
@@ -308,7 +337,6 @@ public class GeoDataStoreApiStepdefs {
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPDELETE);
     }
 
-
     private MetaDataResponse convertToMetaDataReponse(final String jsonString) {
         json.loadString(jsonString);
         MetaDataResponse mdr = new MetaDataResponse();
@@ -339,5 +367,44 @@ public class GeoDataStoreApiStepdefs {
         mdr.setValid(json.getStringNode("valid"));
 
         return mdr;
+    }
+
+
+
+    @When("^I upload a random file with thumbnail and metadata$")
+    public void i_upload_a_random_file_with_thumbnail_and_metadata() throws Throwable {
+        // Write code here that turns the phrase above into concrete actions
+        logger.info("I upload a random file with thumbnail and metadata: {}", uuid.toString());
+
+        testclient.setAddRandomFile(true);
+        testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
+
+
+        // Fill metadata record with some values
+        MetaDataRequest mdrequest = new MetaDataRequest();
+        String jsonString;
+        mdrequest.setTitle("TEST METADATA MACHINE ONECALL");
+        mdrequest.setSummary("TEST METADATA SUMMARY of the machine one call this is the summary of the test metadata");
+        mdrequest.addKeyword("TEST");
+        mdrequest.addKeyword("METADATA");
+        mdrequest.addTopicCategorie("biota");
+        // mdrequest.setLocation("Stampersgat (woonplaats)");
+        mdrequest.setLocationUri("http://geodatastore.pdok.nl/registry/location#Stampersgat_residence");
+        mdrequest.setLineage("Bron van de gegevens is onbekend");
+        mdrequest.setLicense("http://creativecommons.org/licenses/by/3.0/nl/"); // == Public Domain
+        mdrequest.setResolution(1000);
+        JsonConverter jc = new JsonConverter();
+        jsonString = jc.getObjectJson(mdrequest);
+
+        testclient.setMetaData(jsonString);
+        testclient.setPublish(true);
+
+        testclient.setAddThumbnail(true);
+        response = testclient.sendRequest(baseDataSetUrl + "?" + "cucumberid=" + uuid.toString(), TestClient.HTTPPOST);
+
+        testclient.setAddRandomFile(false);
+        testclient.setAddThumbnail(false);
+
+        Assert.assertNotNull(response);
     }
 }

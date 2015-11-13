@@ -13,7 +13,8 @@ public class MetaDataRequest {
     private String[] keywords = null;
     private List<String> topicCategoriesList = new ArrayList<String>();
     private String[] topicCategories = null;
-    private String location;
+  //  private String location;
+    private String locationUri;
     private String lineage;
     private String license;
     private int resolution;
@@ -77,12 +78,21 @@ public class MetaDataRequest {
         this.topicCategoriesList.add(topicCategorie);
     }
 
+    /*
     public String getLocation() {
         return location;
     }
 
     public void setLocation(final String location) {
         this.location = location;
+    }
+*/
+    public String getLocationUri() {
+        return locationUri;
+    }
+
+    public void setLocationUri(final String locationUri) {
+        this.locationUri = locationUri;
     }
 
     public String getLineage() {

@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class TestJsonConverter {
     // Logger initialization
-    private static Logger logger = LoggerFactory.getLogger(TestJsonConverter.class);
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(TestJsonConverter.class);
 
     // Test string
     private static String testJsonString = "{\"title\":\"\",\"summary\":\"\",\"keywords\":[],\"topicCategories\":[],\"location\":null,\"lineage\":\"\",\"useLimitation\":null,\"license\":\"http://creativecommons.org/licenses/by/4.0/\",\"resolution\":null,\"identifier\":\"6a8672f6-0733-487c-a062-ab4e6aef154b\",\"url\":\"http://10.103.55.29:8080/geonetwork/id/dataset/6a8672f6-0733-487c-a062-ab4e6aef154b/somefile.txt\",\"extent\":null,\"error\":false,\"messages\":[],\"status\":\"draft\",\"fileType\":\"application/octet-stream\",\"locationUri\":null,\"changeDate\":null,\"valid\":false}";

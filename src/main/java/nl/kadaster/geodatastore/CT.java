@@ -2,6 +2,7 @@ package nl.kadaster.geodatastore;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.exception.NestableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

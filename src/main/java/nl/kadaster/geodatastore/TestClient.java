@@ -228,6 +228,15 @@ public class TestClient {
                 }
             }
 
+            //some url have pattern scheme://host:port/path
+            // remove port if it is 443 so that ssl has no problems verifying hostname
+            String [] hostparts = host.split(":");
+            if (hostparts.length > 1) {
+                if (hostparts[1].equals("443")) {
+                    host = hostparts[0];
+                }
+            }
+
             //if (method.toUpperCase().equals(HTTPGET)) {
                 if ((query != null) && (query.length() > 0)) {
                     path += "?" + query;

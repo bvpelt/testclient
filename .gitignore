@@ -6,6 +6,8 @@
 *.log
 example.*
 output/*
+out/*
 somefile.txt
 target/*
 testclient.iml
+src/test/target/*
