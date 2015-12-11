@@ -8,12 +8,12 @@ To use the testclient:
 
 ## Create Testclient
 When creating the Testclient you can also set the proxy to use for a request
-
+```java
     testclient = new TestClient();
     if (useProxy) {
     	testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
     }
-
+```
 
 ## Create a Request
 In order to create a request
@@ -21,13 +21,16 @@ In order to create a request
 + add user headers like for instance an `Accept` header
 + send the request and specify the kind of http request to use HTTPGET|HTTPPOST
 
+```java
     url = "https://user:password@myhost.domain.com/contextroot?parameter=1";
     testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
     response = testclient.sendRequest(Url, TestClient.HTTPGET);
+```
        
 ## Post parameters
 To use post parameters, first add all required post parameters add headers and send the request
 
+```Java
     File randomFile = getRandomFile();
     testclient.addPostFile("dataset", randomFile);
      
@@ -39,4 +42,4 @@ To use post parameters, first add all required post parameters add headers and s
      
     testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
     response = testclient.sendRequest(Url, TestClient.HTTPPOST);
- 
+``` 
