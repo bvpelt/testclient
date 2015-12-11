@@ -1,5 +1,8 @@
 # Introduction
 
+## Usage
+Description of usage of TestClient
+See [Usage](Usage.md)
 ## Maven dependencies
 Find maven dependencies by using [https://repository.sonatype.org/](https://repository.sonatype.org/)
 
@@ -37,11 +40,11 @@ Keystore provider: SUN
 
 Your keystore contains 3 entries
 
-trial pkioverheid test root ca - g2, Sep 26, 2015, trustedCertEntry,
++ trial pkioverheid test root ca - g2, Sep 26, 2015, trustedCertEntry,
 Certificate fingerprint (SHA1): FB:C4:7C:0B:BC:87:73:14:43:D2:DB:46:9D:B6:98:F6:AF:2A:9D:DE
-kadasterca, Sep 24, 2015, trustedCertEntry,
++ kadasterca, Sep 24, 2015, trustedCertEntry,
 Certificate fingerprint (SHA1): 8E:8C:08:4F:3E:AE:65:78:01:E0:77:5B:5B:F8:34:58:DF:F0:A2:69
-www-proxy.cs.kadaster.nl, Sep 24, 2015, trustedCertEntry,
++ www-proxy.cs.kadaster.nl, Sep 24, 2015, trustedCertEntry,
 Certificate fingerprint (SHA1): 5B:90:99:30:C0:29:0C:34:59:BD:8D:63:D9:2B:B4:1C:CC:F8:46:30
 
 ```
