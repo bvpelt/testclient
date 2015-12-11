@@ -10,10 +10,14 @@ import nl.kadaster.geodatastore.MetaDataResponse;
 import nl.kadaster.geodatastore.TestClient;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.net.URI;
 import java.util.UUID;
 
@@ -66,15 +70,38 @@ public class GeoDataStoreApiStepdefs {
         Assert.assertNotNull(response);
     }
 
+    private File getRandomFile() {
+        String testFile = "somefile.txt";
+        File file = new File(testFile);
+        try {
+            // if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+            String content = "This is dummy text";
+            bw.write(content);
+            bw.close();
+
+        } catch (Exception e) {
+            logger.error("Couldnot create file: {}", testFile, e);
+        }
+        return file;
+    }
+
     @When("^I upload a random file$")
     public void i_upload_a_random_file() throws Throwable {
         logger.info("I upload a random file, run: {}", uuid.toString());
 
-        testclient.setAddRandomFile(true);
+        File randomFile = getRandomFile();
+        testclient.addPostFile("dataset", randomFile);
+        
+
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         response = testclient.sendRequest(baseDataSetUrl + "?" + "cucumberid=" + uuid.toString(), TestClient.HTTPPOST);
 
-        testclient.setAddRandomFile(false);
         Assert.assertNotNull(response);
     }
 
@@ -157,15 +184,16 @@ public class GeoDataStoreApiStepdefs {
         JsonConverter jc = new JsonConverter();
         jsonString = jc.getObjectJson(mdrequest);
 
-        testclient.setMetaData(jsonString);
-        testclient.setPublish(false);
-
+        boolean publish = false;
+        testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
+        testclient.addPostString("publish", Boolean.toString(publish));
+        
         logger.info("Send metadata file");
 
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier + "?" + "cucumberid=" + uuid.toString();
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
-        testclient.setPublish(false);
+        
     }
 
     @Then("^I get the defined meta data back$")
@@ -222,10 +250,13 @@ public class GeoDataStoreApiStepdefs {
         }
         Assert.assertNotNull(testclient);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-        testclient.setPublish(true);
+         
+        boolean publish = true;
+        testclient.addPostString("publish", Boolean.toString(publish));
+               
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier + "?" + "cucumberid=" + uuid.toString();
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
-        testclient.setPublish(false);
+       
     }
 
     @Then("^I get the defined meta data with status published back$")
@@ -369,14 +400,26 @@ public class GeoDataStoreApiStepdefs {
         return mdr;
     }
 
+    private File getThumbnailFile() {
+        String thumbnailFileName = "xls.png";
+        File file = null;
 
+        try {
+            ClassLoader classLoader = getClass().getClassLoader();
+            file = new File(classLoader.getResource(thumbnailFileName).getFile());
+        } catch (Exception e) {
+            logger.error("Couldnot find file: {}", thumbnailFileName, e);
+        }
+        return file;
+    }
 
     @When("^I upload a random file with thumbnail and metadata$")
     public void i_upload_a_random_file_with_thumbnail_and_metadata() throws Throwable {
         // Write code here that turns the phrase above into concrete actions
         logger.info("I upload a random file with thumbnail and metadata: {}", uuid.toString());
 
-        testclient.setAddRandomFile(true);
+        File randomFile = getRandomFile();
+        testclient.addPostFile("dataset", randomFile);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
 
 
@@ -396,14 +439,16 @@ public class GeoDataStoreApiStepdefs {
         JsonConverter jc = new JsonConverter();
         jsonString = jc.getObjectJson(mdrequest);
 
-        testclient.setMetaData(jsonString);
-        testclient.setPublish(true);
+        
+        boolean publish = false;
+        testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
+        testclient.addPostString("publish", Boolean.toString(publish));
+        
+        File thumbnailFile = getThumbnailFile();
+        testclient.addPostFile("thumbmail", thumbnailFile);
+               
 
-        testclient.setAddThumbnail(true);
         response = testclient.sendRequest(baseDataSetUrl + "?" + "cucumberid=" + uuid.toString(), TestClient.HTTPPOST);
-
-        testclient.setAddRandomFile(false);
-        testclient.setAddThumbnail(false);
 
         Assert.assertNotNull(response);
     }

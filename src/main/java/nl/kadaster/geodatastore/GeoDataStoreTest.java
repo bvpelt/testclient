@@ -2,6 +2,8 @@ package nl.kadaster.geodatastore;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,13 +18,13 @@ import java.io.FileWriter;
 public class GeoDataStoreTest {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreTest.class);
     //private static String host = "http://test1:password@ngr3.geocat.net";
-    private static String host = "https://NLR:testtest@test.geodatastore.pdok.nl";
+    private static String host = "https://WPM:testtest@test.geodatastore.pdok.nl";
     private static String baseUrl = host + "/api/v1";
     private static String baseDataSetUrl = baseUrl + "/dataset";
     private static String baseCodeListUrl = baseUrl + "/registry";
     private int failures = 0;
     private int tests = 0;
-    private boolean useProxy = true;
+    private boolean useProxy = false;
     private boolean verbose = true;
     private StringBuffer resultText = null;
     private String lastIdentifier;
@@ -103,6 +105,26 @@ public class GeoDataStoreTest {
         return error;
     }
 
+    private File getRandomFile() {
+        String testFile = "somefile.txt";
+        File file = new File(testFile);
+        try {
+            // if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+            String content = "This is dummy text";
+            bw.write(content);
+            bw.close();
+
+        } catch (Exception e) {
+            logger.error("Couldnot create file: {}", testFile, e);
+        }
+        return file;
+    }
 
     /**
      * Test upload new dataset
@@ -117,7 +139,11 @@ public class GeoDataStoreTest {
         logger.info("Start test: {}", testName);
 
         try {
-            testclient.setAddRandomFile(true);
+            
+            File randomFile = getRandomFile();
+            
+            testclient.addPostFile("dataset", randomFile);
+            
             testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
             CloseableHttpResponse response = testclient.sendRequest(baseDataSetUrl, TestClient.HTTPPOST);
             error = evaluateResult(testName, response, 200);
@@ -172,9 +198,9 @@ public class GeoDataStoreTest {
 
         try {
             String jsonString;
-
+            boolean publish = false;
+            
             // generate metadata based on result from previous call
-
             MetaDataRequest mdrequest = new MetaDataRequest();
             mdrequest.setTitle("TEST METADATA TITLE");
             mdrequest.setSummary("TEST METADATA SUMMARY this is the summary of the test metadata");
@@ -188,22 +214,20 @@ public class GeoDataStoreTest {
             mdrequest.setResolution(1000);
             JsonConverter jc = new JsonConverter();
             jsonString = jc.getObjectJson(mdrequest);
-
-            testclient.setMetaData(jsonString);
-            testclient.setPublish(false);
-
+    
+            testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
+            testclient.addPostString("publish", Boolean.toString(publish));
+            
             String url = baseDataSetUrl + "/" + mdresponse.getIdentifier();
-            //testclient.getFileEntity(fileName);
+            
             testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
 
             CloseableHttpResponse response = testclient.sendRequest(url, TestClient.HTTPPOST);
 
-
             error = evaluateResult(testName, response, 200);
         } catch (Exception e) {
             error += 1;
-        } finally {
-            testclient.setAddMetaData(false);
+        } finally {           
             testclient.closeSession();
         }
         logger.info("End   test: {} with {}", testName, ((error == 0) ? "success" : "failure"));
@@ -277,12 +301,9 @@ public class GeoDataStoreTest {
         try {
             String jsonString;
             String fileName = "somefile.txt";
-            /*
-            // generate metadata based on result from previous call
-            MetaData md = generateMetaData(resultText.toString());
-            */
+        
             String url;
-            //url = baseDataSetUrl + "/"+ md.getIdentifier();
+            
             url = baseDataSetUrl + "/" + lastIdentifier;
 
             CloseableHttpResponse response = testclient.sendRequest(url, TestClient.HTTPDELETE);

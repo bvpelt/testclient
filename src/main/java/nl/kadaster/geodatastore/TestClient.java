@@ -1,5 +1,9 @@
 package nl.kadaster.geodatastore;
 
+/**
+ * Created by bvpelt on 11/21/15.
+ */
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -23,10 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -37,9 +40,12 @@ import java.util.Set;
 public class TestClient {
     // Public accessable constants
     public static String HTTPS = "https";
-    public static String HTTPGET = "GET";
-    public static String HTTPPOST = "POST";
+    public static String HTTPCOPY = "COPY";
     public static String HTTPDELETE = "DELETE";
+    public static String HTTPGET = "GET";
+    public static String HTTPHEAD = "HEAD";
+    public static String HTTPPOST = "POST";
+    public static String HTTPPUT = "PUT";
 
     // Logger initialization
     private static Logger logger = LoggerFactory.getLogger(TestClient.class);
@@ -54,27 +60,19 @@ public class TestClient {
     private boolean useBasicAuthentication = false;
     private String username;
     private String password;
+
     // map with http headers
     private HashMap<String, String> headers = null;
+    private ArrayList<TestPostParam> postParams = null;
+
     // Private contexts for basic authentication
     private CredentialsProvider credentialsProvider = null;
     private HttpClientContext localContext = null;
+
     // optional proxy settings
     private boolean useProxy = false;
     private String proxyHost;
-    private int proxyPort;
-    // option to add a file
-    private boolean addRandomFile = false;
-    private boolean addFile = false;
-    private boolean addThumbnail = false;
-    private boolean addMetaData = false;
-    private FileBody fileEntity;
-
-    // option publish
-    private Boolean publish = null;
-    private StringBody pubEntity;
-    private StringBody metaDataEntity;
-    private String metaData = null;
+    private int proxyPort;   
 
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd = "geodatastore";
@@ -104,10 +102,7 @@ public class TestClient {
         proxyPort = 0;
         // optional number of headers
         headers = null;
-        // option to add a file
-        addRandomFile = false;
-        addThumbnail = false;
-
+     
         // The keystore password (used for TLS connections and proxy)
         keystorepwd = "geodatastore";
 
@@ -142,7 +137,8 @@ public class TestClient {
         String curValue = headers.get(key);
 
         if ((curValue != null) && (curValue.length() > 0)) {
-            logger.error("Header with name: {} - value: {} already found new value: {}", key, curValue, value);
+            Object [] o = {key, curValue, value};
+            logger.error("Header with name: {} - value: {}, already found new value: {}", o);
         }
 
         headers.put(key, value);
@@ -214,9 +210,10 @@ public class TestClient {
                         }
                     }
                 } else {
-                    host = part1;
-                    if (parts.length > 1) {
-                        port = parts[1];
+                    String[] names = part1.split(":");
+                    // host = names[0];
+                    if (names.length > 1) {
+                        port = names[1];
                         iport = Integer.parseInt(port);
                     } else {
                         if (scheme.toLowerCase().equals(HTTPS)) {
@@ -227,21 +224,10 @@ public class TestClient {
                     }
                 }
             }
-
-            //some url have pattern scheme://host:port/path
-            // remove port if it is 443 so that ssl has no problems verifying hostname
-            String [] hostparts = host.split(":");
-            if (hostparts.length > 1) {
-                if (hostparts[1].equals("443")) {
-                    host = hostparts[0];
-                }
+        
+            if ((query != null) && (query.length() > 0)) {
+                path += "?" + query;
             }
-
-            //if (method.toUpperCase().equals(HTTPGET)) {
-                if ((query != null) && (query.length() > 0)) {
-                    path += "?" + query;
-                }
-            //}
 
             if (user.length() > 0) {
                 response = sendRequest(scheme, host, iport, path, method, user, pwd);
@@ -253,13 +239,8 @@ public class TestClient {
         } finally {
             // reset local variables
             target = null;
-            addFile = false;
-            addRandomFile = false;
-            addThumbnail = false;
-            fileEntity = null;
             headers = null;
-            publish = null;
-            pubEntity = null;
+            postParams = null;
         }
 
         return response;
@@ -280,7 +261,7 @@ public class TestClient {
         credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(
                 new AuthScope(target.getHostName(),
-                target.getPort()),
+                        target.getPort()),
                 new UsernamePasswordCredentials(username, password));
 
         // Create AuthCache instance
@@ -406,34 +387,20 @@ public class TestClient {
 
         httpRequest.setConfig(rc);
 
+
         HttpEntity reqEntity = null;
-        MultipartEntityBuilder mb=MultipartEntityBuilder.create();
+        if (postParams != null) {
 
-        if (publish != null) {
-            mb.addPart("publish", pubEntity);
-        }
-        if (addRandomFile) {
-            logger.info("Add random file");
-            FileBody fileData = getFileEntity();
-            mb.addPart("dataset", fileData);
-        }
-        if (addMetaData) {
-            logger.info("Add metadata");
+            MultipartEntityBuilder mb=MultipartEntityBuilder.create();
 
-            getMetaDataEntity();
-            mb.addPart("metadata", metaDataEntity);
-        }
+            for (TestPostParam p : postParams) {
+                mb.addPart(p.getName(), p.getValue());
+            }
+            reqEntity = mb.build();
 
-        if (addThumbnail) {
-            logger.info("Add thumbnail file");
-            FileBody thumbnailData = getThumbnail();
-            mb.addPart("thumbnail", thumbnailData);
-        }
-
-        reqEntity = mb.build();
-
-        if (httpRequest instanceof HttpPost) {
-            ((HttpPost) httpRequest).setEntity(reqEntity);
+            if (httpRequest instanceof HttpPost) {
+                ((HttpPost) httpRequest).setEntity(reqEntity);
+            }
         }
 
         return httpRequest;
@@ -451,7 +418,8 @@ public class TestClient {
         CloseableHttpClient httpclient = null;
 
         try {
-            logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", scheme, useProxy, useBasicAuthentication);
+            Object [] o = {scheme, useProxy, useBasicAuthentication};
+            logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", o);
 
             boolean isSecure = false;
             SSLConnectionSocketFactory sslsf = null;
@@ -471,8 +439,7 @@ public class TestClient {
                         null,
                         SSLConnectionSocketFactory.getDefaultHostnameVerifier());
             }
-
-            // Alternative start
+          
             HttpClientBuilder clientBuilder = HttpClients.custom();
 
             if (isSecure) {
@@ -488,7 +455,6 @@ public class TestClient {
             }
 
             httpclient = clientBuilder.build();
-            // Alternative end
 
         } catch (Exception e) {
             logger.error("Error creating http client", e);
@@ -497,106 +463,39 @@ public class TestClient {
         return httpclient;
     }
 
-    private StringBody getPublishedEntity() {
-        pubEntity = new StringBody(getPublish().toString(), ContentType.TEXT_PLAIN);
-
-        return pubEntity;
-    }
-
-    private StringBody getMetaDataEntity() {
-        metaDataEntity = new StringBody(getMetaData(), ContentType.APPLICATION_JSON);
-
-        return metaDataEntity;
-    }
-
-    /**
-     * Add dummy file
-     *
-     * @return
-     */
-    private FileBody getFileEntity() {
-
-        FileBody entity = null;
-        File genFile = getNewFile();
-        entity = new FileBody(genFile);
-
-        return entity;
-    }
-
-    private FileBody getThumbnail() {
-        FileBody entity = null;
-        File genFile = getThumbnailFile();
-        entity = new FileBody(genFile);
-
-        return entity;
-    }
-
-    private File getThumbnailFile() {
-        String thumbnailFileName = "xls.png";
-        File file = null;
-
-        try {
-            ClassLoader classLoader = getClass().getClassLoader();
-            file = new File(classLoader.getResource(thumbnailFileName).getFile());
-        } catch (Exception e) {
-            logger.error("Couldnot find file: {}", thumbnailFileName, e);
+    private void addPostParam(final TestPostParam param) {
+        if (null == postParams) {
+            postParams = new ArrayList<TestPostParam>();
         }
-        return file;
+        postParams.add(param);
     }
 
-    private File getNewFile() {
-        String testFile = "somefile.txt";
-        File file = new File(testFile);
-        try {
-            // if file doesnt exists, then create it
-            if (!file.exists()) {
-                file.createNewFile();
-            }
+    public void addPostString(final String name, final String value) {
+        addPostString(name, value, ContentType.TEXT_PLAIN);
+    }
+    
+    
+    public void addPostString(final String name, final String value, final ContentType contentType) {
+        TestPostParam pp = new TestPostParam();
 
-            FileWriter fw = new FileWriter(file.getAbsoluteFile());
-            BufferedWriter bw = new BufferedWriter(fw);
-            String content = "This is dummy text";
-            bw.write(content);
-            bw.close();
+        pp.setName(name);
+        StringBody sb = new StringBody(value, contentType);
+        pp.setValue(sb);
 
-        } catch (Exception e) {
-            logger.error("Couldnot create file: {}", testFile, e);
-        }
-        return file;
+        addPostParam(pp);
     }
 
-    /**
-     * Add an existing file
-     *
-     * @param name
-     * @return
-     */
-    public FileBody getFileEntity(final String name) throws Exception {
+    public void addPostFile(final String name, final File file) {
+        TestPostParam pp = new TestPostParam();
 
-        File file = new File(name);
-        FileBody entity = null;
+        pp.setName(name);
+        FileBody fb = new FileBody(file);
+        pp.setValue(fb);
 
-        // if file doesnt exists, then create it
-        if (!file.exists()) {
-            throw new Exception("Try to add file, but it cannot be found or doesnot exist");
-        }
-
-        entity = new FileBody(new File(name));
-        fileEntity = entity;
-        addFile = true;
-
-        return entity;
+        addPostParam(pp);
     }
 
-
-    public boolean isAddRandomFile() {
-        return addRandomFile;
-    }
-
-    public void setAddRandomFile(final boolean addRandomFile) {
-        this.addRandomFile = addRandomFile;
-    }
-
+  
     public int getSocketTimeOut() {
         return socketTimeOut;
     }
@@ -644,47 +543,5 @@ public class TestClient {
     public void setUseBasicAuthentication(final boolean useBasicAuthentication) {
         this.useBasicAuthentication = useBasicAuthentication;
     }
-
-    public boolean isAddFile() {
-        return addFile;
-    }
-
-    public void setAddFile(final boolean addFile) {
-        this.addFile = addFile;
-    }
-
-    public boolean isAddThumbnail() {
-        return addThumbnail;
-    }
-
-    public void setAddThumbnail(final boolean addThumbnail) {
-        this.addThumbnail = addThumbnail;
-    }
-
-
-    public Boolean getPublish() {
-        return publish;
-    }
-
-    public void setPublish(final Boolean publish) {
-        this.publish = new Boolean(publish);
-        getPublishedEntity();
-    }
-
-    public String getMetaData() {
-        return metaData;
-    }
-
-    public void setMetaData(final String metaData) {
-        this.metaData = metaData;
-        addMetaData = true;
-    }
-
-    public boolean isAddMetaData() {
-        return addMetaData;
-    }
-
-    public void setAddMetaData(final boolean addMetaData) {
-        this.addMetaData = addMetaData;
-    }
+    
 }

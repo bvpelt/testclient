@@ -11,3 +11,4 @@ somefile.txt
 target/*
 testclient.iml
 src/test/target/*
+/target/
