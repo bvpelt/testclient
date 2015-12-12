@@ -440,7 +440,7 @@ public class GeoDataStoreApiStepdefs {
         jsonString = jc.getObjectJson(mdrequest);
 
         
-        boolean publish = false;
+        boolean publish = true;
         testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
         testclient.addPostString("publish", Boolean.toString(publish));
         

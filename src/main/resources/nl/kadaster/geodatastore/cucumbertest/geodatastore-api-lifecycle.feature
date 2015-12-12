@@ -1,5 +1,16 @@
 Feature: Geodatastore api success lifecycle
 
+This feature test the lifcycle of a geodatastore dataset.
+Possible scenarios for adding a dataset are:
+- A multi step proces
+-- Upload a file (this creates a dataset)
+-- Add meta data to the created dataset
+-- Publish the dataset
+- A single step proces
+-- Upload a file, thumbnail, metadata and publish the complete dataset
+
+After creating a dataset the dataset (published file) can be downloaded
+
   Scenario: Upload a random file
     Given There is a testclient
     When I upload a random file

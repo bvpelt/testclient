@@ -8,6 +8,7 @@ To use the testclient:
 
 ## Create Testclient
 When creating the Testclient you can also set the proxy to use for a request
+
 ```java
     testclient = new TestClient();
     if (useProxy) {
@@ -30,7 +31,7 @@ In order to create a request
 ## Post parameters
 To use post parameters, first add all required post parameters add headers and send the request
 
-```Java
+```java
     File randomFile = getRandomFile();
     testclient.addPostFile("dataset", randomFile);
      
