@@ -22,14 +22,17 @@ public class Configuration {
     private static long timeOut = 10000; //ms
 
     private static String fullurl = null;
+    private static String fullnaurl = null; // full url without username password
     private boolean usePdok = true;
 
     public Configuration(boolean usePdok) {
         this.usePdok = usePdok;
         if (usePdok) {
             fullurl = pdok_scheme + "://" + pdok_username + ":" + pdok_password + "@" + pdok_host;
+            fullnaurl = pdok_scheme + "://" + pdok_host;
         } else {
             fullurl = ngr_scheme + "://" + ngr_username + ":" + ngr_password + "@" + ngr_host;
+            fullnaurl = ngr_scheme + "://" + ngr_host;
         }
     }
 
@@ -39,6 +42,10 @@ public class Configuration {
 
     public String getFullUrl() {
         return fullurl;
+    }
+
+    public String getFullNaUrl() {
+        return fullnaurl;
     }
 
     public String getUserName() {

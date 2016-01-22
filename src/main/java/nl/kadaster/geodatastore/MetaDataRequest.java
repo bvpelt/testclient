@@ -13,7 +13,7 @@ public class MetaDataRequest {
     private String[] keywords = null;
     private List<String> topicCategoriesList = new ArrayList<String>();
     private String[] topicCategories = null;
-  //  private String location;
+    //  private String location;
     private String locationUri;
     private String lineage;
     private String license;
@@ -48,7 +48,7 @@ public class MetaDataRequest {
     public void setKeywords(final String[] keywords) {
         this.keywords = keywords;
         keywordList = new ArrayList<String>();
-        for (String kw: keywords) {
+        for (String kw : keywords) {
             keywordList.add(kw);
         }
     }
@@ -60,7 +60,7 @@ public class MetaDataRequest {
     public String[] getTopicCategories() {
         topicCategories = new String[topicCategoriesList.size()];
         int i = 0;
-        for (String top: topicCategoriesList) {
+        for (String top : topicCategoriesList) {
             topicCategories[i++] = top;
         }
         return topicCategories;
@@ -69,7 +69,7 @@ public class MetaDataRequest {
     public void setTopicCategories(final String[] topicCategories) {
         this.topicCategories = topicCategories;
         topicCategoriesList = new ArrayList<String>();
-        for (String top: topicCategories) {
+        for (String top : topicCategories) {
             topicCategoriesList.add(top);
         }
     }

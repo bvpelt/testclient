@@ -72,14 +72,14 @@ public class TestClient {
     // optional proxy settings
     private boolean useProxy = false;
     private String proxyHost;
-    private int proxyPort;   
+    private int proxyPort;
 
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd = "geodatastore";
 
-    // http request parameters in seconds
+    // http request parameters in milliseconds
     private int socketTimeOut = 5000;
-    private int connectTimeOut = 5000;
+    private int connectTimeOut = 10000;
     private int requestTimeOut = 5000;
 
     private HttpHost target = null;
@@ -102,13 +102,13 @@ public class TestClient {
         proxyPort = 0;
         // optional number of headers
         headers = null;
-     
+
         // The keystore password (used for TLS connections and proxy)
         keystorepwd = "geodatastore";
 
         // http request parameters in seconds
         socketTimeOut = 5000;
-        connectTimeOut = 5000;
+        connectTimeOut = 10000;
         requestTimeOut = 5000;
 
         target = null;
@@ -137,7 +137,7 @@ public class TestClient {
         String curValue = headers.get(key);
 
         if ((curValue != null) && (curValue.length() > 0)) {
-            Object [] o = {key, curValue, value};
+            Object[] o = {key, curValue, value};
             logger.error("Header with name: {} - value: {}, already found new value: {}", o);
         }
 
@@ -224,7 +224,7 @@ public class TestClient {
                     }
                 }
             }
-        
+
             if ((query != null) && (query.length() > 0)) {
                 path += "?" + query;
             }
@@ -391,7 +391,7 @@ public class TestClient {
         HttpEntity reqEntity = null;
         if (postParams != null) {
 
-            MultipartEntityBuilder mb=MultipartEntityBuilder.create();
+            MultipartEntityBuilder mb = MultipartEntityBuilder.create();
 
             for (TestPostParam p : postParams) {
                 mb.addPart(p.getName(), p.getValue());
@@ -418,7 +418,7 @@ public class TestClient {
         CloseableHttpClient httpclient = null;
 
         try {
-            Object [] o = {scheme, useProxy, useBasicAuthentication};
+            Object[] o = {scheme, useProxy, useBasicAuthentication};
             logger.debug("Creating httpclient with schema {} and useProxy {} and useBasicAuth {}", o);
 
             boolean isSecure = false;
@@ -439,7 +439,7 @@ public class TestClient {
                         null,
                         SSLConnectionSocketFactory.getDefaultHostnameVerifier());
             }
-          
+
             HttpClientBuilder clientBuilder = HttpClients.custom();
 
             if (isSecure) {
@@ -473,8 +473,8 @@ public class TestClient {
     public void addPostString(final String name, final String value) {
         addPostString(name, value, ContentType.TEXT_PLAIN);
     }
-    
-    
+
+
     public void addPostString(final String name, final String value, final ContentType contentType) {
         TestPostParam pp = new TestPostParam();
 
@@ -495,7 +495,7 @@ public class TestClient {
         addPostParam(pp);
     }
 
-  
+
     public int getSocketTimeOut() {
         return socketTimeOut;
     }
@@ -543,5 +543,5 @@ public class TestClient {
     public void setUseBasicAuthentication(final boolean useBasicAuthentication) {
         this.useBasicAuthentication = useBasicAuthentication;
     }
-    
+
 }

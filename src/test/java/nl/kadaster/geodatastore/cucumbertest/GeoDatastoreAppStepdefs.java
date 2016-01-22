@@ -6,10 +6,12 @@ import cucumber.api.java.en.When;
 import cucumber.deps.com.thoughtworks.xstream.io.binary.Token;
 import org.hamcrest.SelfDescribing;
 import org.junit.Assert;
+/*
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
+*/
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +28,7 @@ public class GeoDatastoreAppStepdefs {
     private static Configuration conf = new Configuration(usePdok);
     private static String fullurl = conf.getFullUrl();
     private static String baseUrl = fullurl + "/";
-
+/*
     private WebDriver driver = null;
 
     @Given("^That I am positioned at geodatastore login page$")
@@ -62,4 +64,5 @@ public class GeoDatastoreAppStepdefs {
         driver.findElement(By.xpath("//a[@title='Afmelden']")).click();
         driver.close();
     }
+    */
 }

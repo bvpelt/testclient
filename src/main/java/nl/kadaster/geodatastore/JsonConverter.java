@@ -1,9 +1,14 @@
 package nl.kadaster.geodatastore;
 
-
+/*
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
+*/
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +54,7 @@ public class JsonConverter {
     }
 
     /**
-     * Get text value of a json field
+     * Get text value of a json field which holds an array
      *
      * @param fieldName
      * @return null, if not found of text representation of field
@@ -58,20 +63,22 @@ public class JsonConverter {
         String[] result = null;
         if (node != null) {
             ArrayNode kw;
-            kw = (ArrayNode)node.get("keywords");
+            kw = (ArrayNode) node.get("keywords");
 
             int maxSize = kw.size();
 
             result = new String[maxSize];
 
-            int i =0;
+            int i = 0;
             while (i < maxSize) {
-                result[i] = kw.get(i).getTextValue();
+                //result[i] = kw.get(i).getTextValue();
+                result[i] = kw.get(i).toString();
                 i++;
             }
         }
         return result;
     }
+
 
     /**
      * Get string representation of a MetaData object

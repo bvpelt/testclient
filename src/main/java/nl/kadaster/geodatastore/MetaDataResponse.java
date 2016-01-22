@@ -62,7 +62,7 @@ public class MetaDataResponse {
     public void setKeywords(final String[] keywords) {
         this.keywords = keywords;
         keywordList = new ArrayList<String>();
-        for (String kw: keywords) {
+        for (String kw : keywords) {
             keywordList.add(kw);
         }
     }
@@ -74,7 +74,7 @@ public class MetaDataResponse {
     public String[] getTopicCategories() {
         topicCategories = new String[topicCategoriesList.size()];
         int i = 0;
-        for (String top: topicCategoriesList) {
+        for (String top : topicCategoriesList) {
             topicCategories[i++] = top;
         }
         return topicCategories;
@@ -83,7 +83,7 @@ public class MetaDataResponse {
     public void setTopicCategories(final String[] topicCategories) {
         this.topicCategories = topicCategories;
         topicCategoriesList = new ArrayList<String>();
-        for (String top: topicCategories) {
+        for (String top : topicCategories) {
             topicCategoriesList.add(top);
         }
     }
@@ -167,7 +167,7 @@ public class MetaDataResponse {
     public String[] getMessages() {
         messages = new String[messageList.size()];
         int i = 0;
-        for (String msg: messageList) {
+        for (String msg : messageList) {
             messages[i++] = msg;
         }
         return messages;
@@ -176,7 +176,7 @@ public class MetaDataResponse {
     public void setMessages(final String[] messages) {
         this.messages = messages;
         messageList = new ArrayList<String>();
-        for (String msg: messages) {
+        for (String msg : messages) {
             messageList.add(msg);
         }
     }

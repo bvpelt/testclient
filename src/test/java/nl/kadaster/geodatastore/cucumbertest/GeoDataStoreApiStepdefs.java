@@ -1,13 +1,13 @@
 package nl.kadaster.geodatastore.cucumbertest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import cucumber.api.PendingException;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import nl.kadaster.geodatastore.*;
+
 import org.junit.Assert;
-import nl.kadaster.geodatastore.JsonConverter;
-import nl.kadaster.geodatastore.MetaDataRequest;
-import nl.kadaster.geodatastore.MetaDataResponse;
-import nl.kadaster.geodatastore.TestClient;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.entity.ContentType;
@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 
@@ -28,14 +29,17 @@ public class GeoDataStoreApiStepdefs {
     private static Logger logger = LoggerFactory.getLogger(GeoDataStoreApiStepdefs.class);
 
     private static boolean usePdok = true;
-    private boolean useProxy = false;
+    private boolean useProxy = true;
 
 
     private static Configuration conf = new Configuration(usePdok);
     private static String fullurl = conf.getFullUrl();
+    private static String fullnaurl = conf.getFullNaUrl();
     private static String baseUrl = fullurl + "/api/v1";
+    private static String baseNaUrl = fullnaurl + "/api/v1";
     private static String baseDataSetUrl = baseUrl + "/dataset";
-    private static String baseCodeListUrl = baseUrl + "/registry";
+    private static String baseRegistriesUrl = baseNaUrl + "/registries";
+    private static String baseRegistryUrl = baseNaUrl + "/registry";
 
     private CloseableHttpResponse response;
     private TestClient testclient;
@@ -54,21 +58,148 @@ public class GeoDataStoreApiStepdefs {
         testclient = new TestClient();
         if (useProxy) {
             testclient.setProxy("www-proxy.cs.kadaster.nl", 8082);
+            //testclient.setProxy("ssl-proxy.cs.kadaster.nl", 8080);
         }
         context.setUuid(uuid);
         Assert.assertNotNull(testclient);
     }
 
-    @When("^I ask for known codelists$")
+    @When("^I ask for known registrie services$")
     public void i_ask_for_known_codelists() throws Throwable {
-        logger.info("I ask for known codelists");
+        logger.info("Get list of known registrie services");
 
         // Not yet implemented, topic Codelist is implemented
-        testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-        response = testclient.sendRequest(baseCodeListUrl + "/gmd:MD_TopicCategoryCode?cucumberid=" + uuid.toString(), TestClient.HTTPGET);
+        testclient.addHeader("Accept", "application/json");
+        response = testclient.sendRequest(baseRegistriesUrl, TestClient.HTTPGET);
 
         Assert.assertNotNull(response);
     }
+
+    @When("^I ask register service (.*) with parameter (.*)$")
+    public void i_ask_register_service_license_with_parameter(String regServiceName, String parameters) throws Throwable {
+        logger.info("I ask register service {} with parameter {}", regServiceName, parameters);
+
+        // Get al knownn names with url to the service url
+        testclient.addHeader("Accept", "application/json");
+        response = testclient.sendRequest(baseRegistriesUrl, TestClient.HTTPGET);
+
+        HttpEntity entity = null;
+        String testUri = null;
+        try {
+            entity = response.getEntity();
+            Assert.assertNotNull(entity);
+            if (entity != null) {
+                String content = EntityUtils.toString(entity);
+                Assert.assertNotNull(content);
+                resultText = new StringBuffer(content);
+                Assert.assertNotNull(resultText);
+                Assert.assertNotEquals(0, resultText.toString().length());
+                if (resultText.toString().length() > 0) {
+                    if (response.getStatusLine().getStatusCode() == 200) {
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            RegistryServicesResponse myObjects = mapper.readValue(resultText.toString(), RegistryServicesResponse.class);
+
+                            logger.debug("Found objects: {}", myObjects.getRegistries().toString());
+                            boolean found = false;
+                            int i = 0;
+                            int maxLen = myObjects.getRegistries().length;
+                            while ((!found) && (i < maxLen)) {
+                                RegistryService rs = myObjects.getRegistries()[i];
+                                if (regServiceName.equals(rs.getName())) {
+                                    testUri = rs.getUrl();
+                                    found = true;
+                                }
+                                i++;
+                            }
+                        } catch (IOException e) {
+                            logger.error("Error during conversion of json response: {}", e);
+                        }
+                    }
+                }
+                logger.info("Result size: {}, content: {}", content.length(), content);
+            }
+        } catch (Exception e) {
+            throw new Exception("Error extracting result");
+        } finally {
+            response.close();
+        }
+
+        if (testUri != null) {
+            // Not yet implemented, topic Codelist is implemented
+            testclient.addHeader("Accept", "application/json");
+            testUri = testUri + "?" + parameters;
+            logger.info("Request service: {} with parameters: {} on uri: {}", regServiceName, parameters, testUri);
+            response = testclient.sendRequest(testUri, TestClient.HTTPGET);
+        } else {
+            logger.error("No service url found for registry service {}", regServiceName);
+        }
+        Assert.assertNotNull(response);
+    }
+
+    @When("^I ask register service (.*) without filtering$")
+    public void i_ask_register_serivce_without_filtering(String regServiceName) throws Throwable {
+        logger.info("I ask register service {} without filtering", regServiceName);
+
+        // Get al knownn names with url to the service url
+        testclient.addHeader("Accept", "application/json");
+        response = testclient.sendRequest(baseRegistriesUrl, TestClient.HTTPGET);
+
+        HttpEntity entity = null;
+        String testUri = null;
+        try {
+            entity = response.getEntity();
+            Assert.assertNotNull(entity);
+            if (entity != null) {
+                String content = EntityUtils.toString(entity);
+                Assert.assertNotNull(content);
+                resultText = new StringBuffer(content);
+                Assert.assertNotNull(resultText);
+                Assert.assertNotEquals(0, resultText.toString().length());
+                if (resultText.toString().length() > 0) {
+                    if (response.getStatusLine().getStatusCode() == 200) {
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            RegistryServicesResponse myObjects = mapper.readValue(resultText.toString(), RegistryServicesResponse.class);
+
+                            logger.debug("Found objects: {}", myObjects.getRegistries().toString());
+                            boolean found = false;
+                            int i = 0;
+                            int maxLen = myObjects.getRegistries().length;
+                            while ((!found) && (i < maxLen)) {
+                                RegistryService rs = myObjects.getRegistries()[i];
+                                if (regServiceName.equals(rs.getName())) {
+                                    testUri = rs.getUrl();
+                                    found = true;
+                                }
+                                logger.debug("Searching for registry service {} current value {} result {}", regServiceName, rs.getName(), found);
+                                i++;
+                            }
+                        } catch (IOException e) {
+                            logger.error("Error during conversion of json response: {}", e);
+                        }
+                    }
+                }
+                logger.info("Result size: {}, content: {}", content.length(), content);
+            }
+        } catch (Exception e) {
+            throw new Exception("Error extracting result");
+        } finally {
+            response.close();
+        }
+
+        if (testUri != null) {
+            // Not yet implemented, topic Codelist is implemented
+            testclient.addHeader("Accept", "application/json");
+            response = testclient.sendRequest(testUri, TestClient.HTTPGET);
+        } else {
+            logger.error("No service url found for registry service {}", regServiceName);
+        }
+        Assert.assertNotNull(response);
+    }
+
 
     private File getRandomFile() {
         String testFile = "somefile.txt";
@@ -97,7 +228,7 @@ public class GeoDataStoreApiStepdefs {
 
         File randomFile = getRandomFile();
         testclient.addPostFile("dataset", randomFile);
-        
+
 
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         response = testclient.sendRequest(baseDataSetUrl + "?" + "cucumberid=" + uuid.toString(), TestClient.HTTPPOST);
@@ -110,6 +241,69 @@ public class GeoDataStoreApiStepdefs {
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatusLine().getStatusCode());
     }
+
+    @Then("^I get http status (\\d+)$")
+    public void i_get_http_status(int status) throws Throwable {
+        Assert.assertNotNull(response);
+        Assert.assertEquals(status, response.getStatusLine().getStatusCode());
+    }
+
+    private boolean nameInServiceList(String name, RegistryServicesResponse myObjects) {
+        boolean found = false;
+        RegistryService[] services = myObjects.getRegistries();
+        int len = services.length;
+        int i = 0;
+        while ((!found) && (i < len)) {
+            found = name.equals(services[i].getName());
+            i++;
+        }
+        return found;
+    }
+
+    @Then("^I get a list of (\\d+) known registrie services with names \\'(.*)\\'$")
+    public void i_get_a_list_of_known_registrie_services(int numServices, String names) throws Throwable {
+        logger.info("I get a list of {} known registrie services with names {}, run: {}", numServices, names, uuid.toString());
+        String [] registryNames = names.split(", ");
+
+        HttpEntity entity = null;
+
+        try {
+            entity = response.getEntity();
+            Assert.assertNotNull(entity);
+            if (entity != null) {
+                String content = EntityUtils.toString(entity);
+                Assert.assertNotNull(content);
+                resultText = new StringBuffer(content);
+                Assert.assertNotNull(resultText);
+                Assert.assertNotEquals(0, resultText.toString().length());
+                if (resultText.toString().length() > 0) {
+                    if (response.getStatusLine().getStatusCode() == 200) {
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            RegistryServicesResponse myObjects = mapper.readValue(resultText.toString(), RegistryServicesResponse.class);
+
+                            for (String regName: registryNames) {
+                                logger.debug("Checking if {} exists", regName);
+                                boolean found = nameInServiceList(regName, myObjects);
+                                Assert.assertEquals("service: " + regName + " found", true, found);
+                            }
+                            Assert.assertEquals(numServices, myObjects.getRegistries().length);
+                            logger.debug("Found objects: {}", myObjects.getRegistries().toString());
+                        } catch (IOException e) {
+                            logger.error("Error during conversion of json response: {}", e);
+                        }
+                    }
+                }
+                logger.info("Result size: {}, content: {}", content.length(), content);
+            }
+        } catch (Exception e) {
+            throw new Exception("Error extracting result");
+        } finally {
+            response.close();
+        }
+    }
+
 
     @Then("^I get the identifier of the uploaded dataset$")
     public void i_get_the_identifier_of_the_uploaded_dataset() throws Throwable {
@@ -176,7 +370,7 @@ public class GeoDataStoreApiStepdefs {
         mdrequest.addKeyword("TEST");
         mdrequest.addKeyword("METADATA");
         mdrequest.addTopicCategorie("biota");
-       // mdrequest.setLocation("Stampersgat (woonplaats)");
+        // mdrequest.setLocation("Stampersgat (woonplaats)");
         mdrequest.setLocationUri("http://geodatastore.pdok.nl/registry/location#Stampersgat_residence");
         mdrequest.setLineage("Bron van de gegevens is onbekend");
         mdrequest.setLicense("http://creativecommons.org/licenses/by/3.0/nl/"); // == Public Domain
@@ -187,13 +381,13 @@ public class GeoDataStoreApiStepdefs {
         boolean publish = false;
         testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
         testclient.addPostString("publish", Boolean.toString(publish));
-        
+
         logger.info("Send metadata file");
 
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier + "?" + "cucumberid=" + uuid.toString();
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
-        
+
     }
 
     @Then("^I get the defined meta data back$")
@@ -250,13 +444,13 @@ public class GeoDataStoreApiStepdefs {
         }
         Assert.assertNotNull(testclient);
         testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
-         
+
         boolean publish = true;
         testclient.addPostString("publish", Boolean.toString(publish));
-               
+
         String datasetUrl = baseDataSetUrl + "/" + lastIdentifier + "?" + "cucumberid=" + uuid.toString();
         response = testclient.sendRequest(datasetUrl, TestClient.HTTPPOST);
-       
+
     }
 
     @Then("^I get the defined meta data with status published back$")
@@ -400,6 +594,7 @@ public class GeoDataStoreApiStepdefs {
         return mdr;
     }
 
+
     private File getThumbnailFile() {
         String thumbnailFileName = "xls.png";
         File file = null;
@@ -439,14 +634,14 @@ public class GeoDataStoreApiStepdefs {
         JsonConverter jc = new JsonConverter();
         jsonString = jc.getObjectJson(mdrequest);
 
-        
+
         boolean publish = true;
         testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
         testclient.addPostString("publish", Boolean.toString(publish));
-        
+
         File thumbnailFile = getThumbnailFile();
         testclient.addPostFile("thumbmail", thumbnailFile);
-               
+
 
         response = testclient.sendRequest(baseDataSetUrl + "?" + "cucumberid=" + uuid.toString(), TestClient.HTTPPOST);
 

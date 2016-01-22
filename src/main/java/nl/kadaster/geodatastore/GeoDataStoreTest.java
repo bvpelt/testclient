@@ -139,11 +139,11 @@ public class GeoDataStoreTest {
         logger.info("Start test: {}", testName);
 
         try {
-            
+
             File randomFile = getRandomFile();
-            
+
             testclient.addPostFile("dataset", randomFile);
-            
+
             testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
             CloseableHttpResponse response = testclient.sendRequest(baseDataSetUrl, TestClient.HTTPPOST);
             error = evaluateResult(testName, response, 200);
@@ -199,7 +199,7 @@ public class GeoDataStoreTest {
         try {
             String jsonString;
             boolean publish = false;
-            
+
             // generate metadata based on result from previous call
             MetaDataRequest mdrequest = new MetaDataRequest();
             mdrequest.setTitle("TEST METADATA TITLE");
@@ -214,12 +214,12 @@ public class GeoDataStoreTest {
             mdrequest.setResolution(1000);
             JsonConverter jc = new JsonConverter();
             jsonString = jc.getObjectJson(mdrequest);
-    
+
             testclient.addPostString("metadata", jsonString, ContentType.APPLICATION_JSON);
             testclient.addPostString("publish", Boolean.toString(publish));
-            
+
             String url = baseDataSetUrl + "/" + mdresponse.getIdentifier();
-            
+
             testclient.addHeader("Accept", "application/json, text/javascript, */*; q=0.01");
 
             CloseableHttpResponse response = testclient.sendRequest(url, TestClient.HTTPPOST);
@@ -227,7 +227,7 @@ public class GeoDataStoreTest {
             error = evaluateResult(testName, response, 200);
         } catch (Exception e) {
             error += 1;
-        } finally {           
+        } finally {
             testclient.closeSession();
         }
         logger.info("End   test: {} with {}", testName, ((error == 0) ? "success" : "failure"));
@@ -301,9 +301,9 @@ public class GeoDataStoreTest {
         try {
             String jsonString;
             String fileName = "somefile.txt";
-        
+
             String url;
-            
+
             url = baseDataSetUrl + "/" + lastIdentifier;
 
             CloseableHttpResponse response = testclient.sendRequest(url, TestClient.HTTPDELETE);
