@@ -1,9 +1,6 @@
-package nl.kadaster.geodatastore;
+package support;
 
-/**
- * Created by bvpelt on 11/21/15.
- */
-
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -23,6 +20,8 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.*;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +32,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+
+/**
+ * Created by bvpelt on 11/21/15.
+ */
 
 /**
  * Created by bvpelt on 9/26/15.
@@ -77,9 +80,9 @@ public class TestClient {
     // The keystore password (used for TLS connections and proxy)
     private String keystorepwd = "geodatastore";
 
-    // http request parameters in milliseconds
+    // http request parameters in milli seconds
     private int socketTimeOut = 5000;
-    private int connectTimeOut = 10000;
+    private int connectTimeOut = 5000;
     private int requestTimeOut = 5000;
 
     private HttpHost target = null;
@@ -108,7 +111,7 @@ public class TestClient {
 
         // http request parameters in seconds
         socketTimeOut = 5000;
-        connectTimeOut = 10000;
+        connectTimeOut = 5000;
         requestTimeOut = 5000;
 
         target = null;
@@ -120,17 +123,21 @@ public class TestClient {
      *
      * @param proxyHost the hostname of the proxy
      * @param proxyPort the portnumber of the proxy
-     * @throws Exception if either hostname or proxy is not specified proxy can't be specified
+     * @throws Exception if either hostname or proxy is not specified proxy can't be
+     *                   specified
      */
     public void setProxy(final String proxyHost, final int proxyPort) throws Exception {
         if ((proxyHost == null) || (proxyHost.length() == 0) || (proxyPort == 0)) {
             throw new Exception("Adding proxy requires a proxy hostname and a proxy port number");
         }
+        logger.debug("Setup proxy {}:{}", proxyHost, proxyPort);
         proxy = new HttpHost(proxyHost, proxyPort);
         useProxy = true;
     }
 
     public void addHeader(final String key, final String value) {
+        logger.debug("Add header key: {} with value: {}", key, value);
+
         if (null == headers) {
             headers = new HashMap<String, String>();
         }
@@ -153,11 +160,14 @@ public class TestClient {
      * @throws Exception if anything failes
      */
     public CloseableHttpResponse sendRequest(final String url, final String method) throws Exception {
+        logger.debug("send request to url: {} with method: {}", url, method);
+
         response = null;
         target = null;
 
         try {
-            if (!((method.toUpperCase().equals(HTTPGET)) || (method.toUpperCase().equals(HTTPPOST) || (method.toUpperCase().equals(HTTPDELETE))))) {
+            if (!((method.toUpperCase().equals(HTTPGET))
+                    || (method.toUpperCase().equals(HTTPPOST) || (method.toUpperCase().equals(HTTPDELETE))))) {
                 throw new Exception("Unknown and unsupported method in url");
             }
             URI uri = URI.create(url);
@@ -178,14 +188,15 @@ public class TestClient {
             int iport = 0;
 
             //
-            // Generic definition of authority  user:password@host:port
+            // Generic definition of authority user:password@host:port
             // determine if there is a "@" in the authority
             if ((authority != null) && (authority.length() > 0)) {
                 String[] parts = authority.split("@");
                 String part1;
 
                 part1 = parts[0];
-                if (authority.contains("@")) { // username password specified (optional)
+                if (authority.contains("@")) { // username password specified
+                    // (optional)
                     String[] pwdparts = parts[0].split(":");
                     user = pwdparts[0];
                     if (pwdparts.length > 1) {
@@ -247,6 +258,8 @@ public class TestClient {
     }
 
     public void closeSession() {
+        logger.debug("Close the session");
+
         try {
             if (response != null) {
                 response.close();
@@ -258,10 +271,10 @@ public class TestClient {
     }
 
     private void createBasicAuthContext(final HttpHost target) {
+        logger.debug("Create basicauthcontext for host: {} port: {}", target.getHostName(), target.getPort());
+
         credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(
-                new AuthScope(target.getHostName(),
-                        target.getPort()),
+        credentialsProvider.setCredentials(new AuthScope(target.getHostName(), target.getPort()),
                 new UsernamePasswordCredentials(username, password));
 
         // Create AuthCache instance
@@ -277,12 +290,15 @@ public class TestClient {
         localContext.setAuthCache(authCache);
     }
 
-    private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path, final String method, final String username, final String password) throws Exception {
+    private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path,
+                                              final String method, final String username, final String password) throws Exception {
+        logger.debug("Send request with authentication scheme: {}, host: {}, port: {}, path: {}, method: {}, username: {}, password: {}", scheme, host, port, path, method, username, password);
+
         try {
             if ((username == null) || (username.length() == 0) || (password == null) || (password.length() == 0)) {
                 throw new Exception("For basic authentication username and password are required");
             } else {
-                logger.info("Using basic authentication for user: {}", username);
+                logger.debug("Using basic authentication for user: {}", username);
                 this.username = username;
                 this.password = password;
                 this.useBasicAuthentication = true;
@@ -307,21 +323,22 @@ public class TestClient {
     }
 
     private URI getUri(final String scheme, final String host, final String path) throws Exception {
+        logger.debug("Get uri for scheme: {}, host: {}, path: {}", scheme, host, path);
+
         URI uri = null;
 
         try {
-            uri = new URIBuilder()
-                    .setScheme(scheme)
-                    .setHost(host)
-                    .setPath(path)
-                    .build();
+            uri = new URIBuilder().setScheme(scheme).setHost(host).setPath(path).build();
         } catch (Exception e) {
             throw new Exception("Error building uri", e);
         }
         return uri;
     }
 
-    private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path, final String method) {
+    private CloseableHttpResponse sendRequest(final String scheme, final String host, final int port, final String path,
+                                              final String method) {
+        logger.debug("Send request for scheme: {}, host: {}, port: {}, path: {}, method: {}", scheme, host, port, path, method);
+
         CloseableHttpResponse response = null;
         URI uri = null;
         HttpRequestBase httpRequest = null;
@@ -336,7 +353,7 @@ public class TestClient {
 
             CloseableHttpClient httpclient = getHttpClient(scheme);
 
-            logger.info("Sending request to: {}", httpRequest.toString());
+            logger.debug("Sending request to: {}", httpRequest.toString());
 
             if (useBasicAuthentication) {
                 response = httpclient.execute(target, httpRequest, localContext);
@@ -350,6 +367,8 @@ public class TestClient {
     }
 
     private HttpRequestBase getMessage(final URI uri, final String method) throws Exception {
+        logger.debug("getMessage for uri: {}, method: {}", uri.toString(), method);
+
         HttpRequestBase httpRequest = null;
 
         if (method.equals(HTTPPOST)) {
@@ -371,22 +390,17 @@ public class TestClient {
             while (it.hasNext()) {
                 String key = it.next();
                 String value = headers.get(key);
-                logger.info("Adding header {}:, {}", key, value);
+                logger.debug("Adding header {}:, {}", key, value);
                 httpRequest.addHeader(key, value);
             }
         }
 
-        RequestConfig dcNoAuth = RequestConfig.custom()
-                .setSocketTimeout(socketTimeOut)
-                .setConnectTimeout(connectTimeOut)
-                .setConnectionRequestTimeout(requestTimeOut)
-                .build();
+        RequestConfig dcNoAuth = RequestConfig.custom().setSocketTimeout(socketTimeOut)
+                .setConnectTimeout(connectTimeOut).setConnectionRequestTimeout(requestTimeOut).build();
 
-        RequestConfig rc = RequestConfig.copy(dcNoAuth)
-                .build();
+        RequestConfig rc = RequestConfig.copy(dcNoAuth).build();
 
         httpRequest.setConfig(rc);
-
 
         HttpEntity reqEntity = null;
         if (postParams != null) {
@@ -406,15 +420,19 @@ public class TestClient {
         return httpRequest;
     }
 
-
     /**
-     * Get a parameterized http client, based on usage off https and useProxy setting
+     * Get a parameterized http client, based on usage off https and useProxy
+     * setting
      * <p/>
-     * Assumes a CredentialsProvider credsProvider has been created if basicAuthentication is used!
+     * Assumes a CredentialsProvider credsProvider has been created if
+     * basicAuthentication is used!
      *
-     * @return a valid CloableHttpClient based on the scheme and useProxy setting
+     * @return a valid CloableHttpClient based on the scheme and useProxy
+     * setting
      */
     private CloseableHttpClient getHttpClient(final String scheme) throws Exception {
+        logger.debug("getHttpClient for scheme: {}", scheme);
+
         CloseableHttpClient httpclient = null;
 
         try {
@@ -427,16 +445,11 @@ public class TestClient {
             if (scheme.equals(HTTPS)) {
                 isSecure = true;
                 // Trust own CA and all self-signed certs
-                SSLContext sslcontext = SSLContexts.custom()
-                        .loadTrustMaterial(new File("proxykeystore.jks"), keystorepwd.toCharArray(),
-                                new TrustSelfSignedStrategy())
-                        .build();
+                SSLContext sslcontext = SSLContexts.custom().loadTrustMaterial(new File("proxykeystore.jks"),
+                        keystorepwd.toCharArray(), new TrustSelfSignedStrategy()).build();
 
                 // Allow TLSv1 protocol only
-                sslsf = new SSLConnectionSocketFactory(
-                        sslcontext,
-                        new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"},
-                        null,
+                sslsf = new SSLConnectionSocketFactory(sslcontext, new String[]{"TLSv1", "TLSv1.1", "TLSv1.2"}, null,
                         SSLConnectionSocketFactory.getDefaultHostnameVerifier());
             }
 
@@ -464,6 +477,8 @@ public class TestClient {
     }
 
     private void addPostParam(final TestPostParam param) {
+        logger.debug("addPostParam name: {} value: {}", param.getName(), param.getValue());
+
         if (null == postParams) {
             postParams = new ArrayList<TestPostParam>();
         }
@@ -471,9 +486,10 @@ public class TestClient {
     }
 
     public void addPostString(final String name, final String value) {
+        logger.debug("addPostString name: {}, value: {}", name, value);
+
         addPostString(name, value, ContentType.TEXT_PLAIN);
     }
-
 
     public void addPostString(final String name, final String value, final ContentType contentType) {
         TestPostParam pp = new TestPostParam();
@@ -494,7 +510,6 @@ public class TestClient {
 
         addPostParam(pp);
     }
-
 
     public int getSocketTimeOut() {
         return socketTimeOut;
@@ -544,4 +559,101 @@ public class TestClient {
         this.useBasicAuthentication = useBasicAuthentication;
     }
 
+    /**
+     * Return the statuscode of previously executed sendmessage. If there is no
+     * result return -1
+     *
+     * @return HTTP Status code from previous call or -1 if there is no response
+     */
+    public int getStatusCode() {
+        int statusCode = -1;
+
+        if (null != response) {
+            statusCode = response.getStatusLine().getStatusCode();
+        }
+        return statusCode;
+    }
+
+    /**
+     * Return the resulttext of previously executed sendmessage If there is no
+     * result return null
+     *
+     * @return Result text from previous call or null if there is no response
+     * @throws Exception
+     */
+    public String getResultText() throws Exception {
+        String resultText = null;
+        HttpEntity entity = null;
+        if (null != response) {
+            try {
+                entity = response.getEntity();
+                Assert.assertNotNull(entity);
+                if (entity != null) {
+                    String content = EntityUtils.toString(entity);
+                    Assert.assertNotNull(content);
+                    StringBuffer resultTextBuffer = new StringBuffer(content);
+                    Assert.assertNotNull(resultTextBuffer);
+                    Assert.assertNotEquals(0, resultTextBuffer.toString().length());
+                    if (resultTextBuffer.toString().length() > 0) {
+                        resultText = resultTextBuffer.toString();
+                    }
+                    logger.debug("Result size: {}, content: {}", content.length(), content);
+                }
+            } catch (Exception e) {
+                throw new Exception("Error extracting result");
+            }
+        }
+        return resultText;
+    }
+
+    /**
+     * Return the resulttext of previously executed sendmessage If there is no
+     * result return null
+     *
+     * @return Result text from previous call or null if there is no response
+     * @throws Exception
+     */
+    public String getContentDispositionFilename() throws Exception {
+        String resultText = "";
+
+        if (null != response) {
+            try {
+                // "Content-Disposition: attachment; filename="somefile.txt"
+                Header header = response.getFirstHeader("Content-Disposition");
+                Assert.assertNotNull(header);
+                String headerString = header.getValue();
+                logger.debug("Header string: {}", headerString);
+
+                String[] parts = headerString.split(";");
+                if (parts.length > 1) {
+                    String fn = parts[1];
+                    int len = fn.length();
+                    int i = 0;
+                    boolean found = (fn.charAt(i) == '"');
+
+                    while (!found && (i < len)) {
+                        found = (fn.charAt(i++) == '"');
+                    }
+
+                    if (found && (i < len)) {
+                        found = false;
+                        while (!found && (i < len)) {
+                            char c = fn.charAt(i);
+                            if (c != '"') {
+                                resultText += c;
+                            } else {
+                                found = true;
+                            }
+                            i++;
+                        }
+                    }
+                }
+                logger.debug("Found filename: {}", resultText);
+
+            } catch (Exception e) {
+                throw new Exception("Error extracting result");
+            }
+        }
+        return resultText;
+    }
 }

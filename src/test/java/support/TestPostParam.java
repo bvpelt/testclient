@@ -1,5 +1,4 @@
-package nl.kadaster.geodatastore;
-
+package support;
 
 import org.apache.http.entity.mime.content.ContentBody;
 

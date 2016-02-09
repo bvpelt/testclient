@@ -1,8 +1,5 @@
-package nl.kadaster.geodatastore;
+package support;
 
-/**
- * Created by PeltB on 14-1-2016.
- */
 public class RegistryService {
     private String name;
     private String url;
@@ -22,5 +19,4 @@ public class RegistryService {
     public void setUrl(final String url) {
         this.url = url;
     }
-
 }

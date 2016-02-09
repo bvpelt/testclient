@@ -6,6 +6,19 @@ See [Usage](Usage.md)
 ## Maven dependencies
 Find maven dependencies by using [https://repository.sonatype.org/](https://repository.sonatype.org/)
 
+There are a number of tags available for testing.
+- Registries
+- Registrie
+- RegistrieParam
+
+See [https://cucumber.io/docs/reference/jvm#java](https://cucumber.io/docs/reference/jvm#java))
+
+To run maven with testoptions use
+
+- mvn test -Dcucumber.options="--help"
+- mvn test -Dcucumber.options="--tags @Registries"
+- mvn test -Dcucumber.options="--tags @Registries,@Registrie,@RegistrieParam"
+
 ## Github
 See [Git Branching Basic Branching and Merging](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging)
 for usefull documentation about using branches/merges in git.

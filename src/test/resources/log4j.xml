@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<!--
+log4j configuration https://wiki.apache.org/logging-log4j/Log4jXmlFormat
+log4j patterns https://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
+ -->
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+    <appender name="consoleAppender" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d %5p [%t] (%F:%L) - %m%n"/>
+        </layout>
+
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="levelMin" value="info"/>
+            <param name="levelMax" value="info"/>
+        </filter>
+    </appender>
+
+    <appender name="fileAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="example.log"/>
+        <param name="Append" value="true"/>
+        <param name="MaxFileSize" value="1024KB"/>
+        <param name="MaxBackupIndex" value="2"/>
+
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d %5p [%t] (%F:%L) - %m%n"/>
+        </layout>
+    </appender>
+
+    <logger name="org.apache">
+        <level value="debug"/>
+        <appender-ref ref="fileAppender"/>
+    </logger>
+
+    <logger name="nl.kadaster">
+        <level value="debug"/>
+        <appender-ref ref="fileAppender"/>
+    </logger>
+
+    <logger name="support">
+        <level value="debug"/>
+        <appender-ref ref="fileAppender"/>
+    </logger>
+
+    <root>
+        <priority value="warn"/>
+        <appender-ref ref="consoleAppender"/>
+    </root>
+
+</log4j:configuration>
