@@ -21,19 +21,24 @@ public class Configuration {
     private boolean useproxy = false;
     private String proxyHost = "www-proxy.cs.kadaster.nl";
     private int proxyPort = 8082;
-
+    private int connectTimeOut = 5000; // ms
+    private int requestTimeOut = 5000; // ms
+    private int socketTimeOut = 5000; // ms
+    
     private String dataset = "dataset";
     private String datasets = "datasets";
     private String registries = "registries";
     private String registry = "registry";
     private String apiversion = "/api/v1/";
 
-    private int connectTimeOut = 5000; // ms
-    private int requestTimeOut = 5000; // ms
-    private int socketTimeOut = 5000; // ms
-    
+  
 
     public Configuration() {
+    	loadConfig();
+    }
+    
+    private void loadConfig() {
+    	logger.debug("Start: Loading configuration");
         String configname = "test.properties";
         Properties prop = new Properties();
         InputStream input = null;
@@ -53,8 +58,7 @@ public class Configuration {
             password = prop.getProperty("password", password);
             logger.debug("Configuration password: {}", password);
             
-            String b = password = prop.getProperty("useproxy");
-            logger.debug("Configuration read useproxy: {}", b);
+            String b = prop.getProperty("useproxy");            
             if (b.equals("true")) {
             	useproxy = true;
             }
@@ -64,6 +68,12 @@ public class Configuration {
             }
             logger.debug("Configuration useproxy: {}", useproxy);
             
+            b = prop.getProperty("scheme");       
+            if (b.equals("https") || b.equals("http")) {
+            	scheme = b;
+            }
+            logger.debug("Configuration scheme: {}", scheme);
+            
             host = prop.getProperty("host");
             logger.debug("Configuration host: {}", host);
 
@@ -72,6 +82,15 @@ public class Configuration {
 
             proxyPort = Integer.parseInt(prop.getProperty("proxyport", Integer.toString(proxyPort)));
             logger.debug("Configuration proxyport: {}", proxyPort);
+            
+            connectTimeOut = Integer.parseInt(prop.getProperty("connecttimeOut", Integer.toString(connectTimeOut)));
+            logger.debug("Configuration connectTimeOut: {}", connectTimeOut);
+            
+            requestTimeOut = Integer.parseInt(prop.getProperty("requesttimeOut", Integer.toString(requestTimeOut)));
+            logger.debug("Configuration requestTimeOut: {}", requestTimeOut);
+            
+            socketTimeOut = Integer.parseInt(prop.getProperty("sockettimeOut", Integer.toString(socketTimeOut)));
+            logger.debug("Configuration socketTimeOut: {}", socketTimeOut);
 
         } catch (IOException ex) {
             logger.error("Error loading configuration: {}", ex);
@@ -84,6 +103,7 @@ public class Configuration {
                 }
             }
         }
+        logger.debug("End  : Loading configuration");
     }
 
     public String getBaseUrl(final boolean useAuthentication) {
