@@ -14,6 +14,8 @@ import support.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLEncoder;
 
 public class LifeCycleSteps {
@@ -334,6 +336,36 @@ public class LifeCycleSteps {
         Assert.assertEquals(0, datasetQueryResponse.getCount());
     }
 
+    @When("^I upload a random file with thumbnail and metadata$")
+    public void iUploadARandomFileWithThumbnailAndMetadata() throws Throwable {
+    	logger.debug("Start: I upload a random file with thumbnail and metadata");
+    	// get upload file
+        File randomFile = getRandomFile(datasetFileName);
+        
+    	// get meta data
+        String metaData = createValidMetaData();
+    	
+    	// set thumbnail
+        File thumbNailFile = getThumbNailFile();
+    	
+    	// set publish flag
+        boolean publish = true;
+        
+    	// send to client
+        createTestClient();
+        Assert.assertNotNull(tc);
+        tc.addPostFile("dataset", randomFile);
+        tc.addPostString("metadata", metaData);
+        tc.addPostFile("thumbnail", thumbNailFile);
+        tc.addPostString("publish", Boolean.toString(publish));
+        
+        String url = conf.getDataset(true);
+        response = tc.sendRequest(url, TestClient.HTTPPOST);
+        
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, tc.getStatusCode());
+    }
+
     private String createValidMetaData() throws Throwable {
         logger.debug("Create valid metadata");
 
@@ -562,6 +594,15 @@ public class LifeCycleSteps {
         } catch (Exception e) {
             logger.error("Couldnot create file: {}", name, e);
         }
+        return file;
+    }
+
+    private File getThumbNailFile() throws URISyntaxException {
+        logger.debug("Get a thumbnail file");
+
+        URL url = this.getClass().getResource("/xls.png");
+        File file = new File(url.toURI());
+       
         return file;
     }
 

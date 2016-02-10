@@ -31,6 +31,7 @@ public class Configuration {
     private int connectTimeOut = 5000; // ms
     private int requestTimeOut = 5000; // ms
     private int socketTimeOut = 5000; // ms
+    
 
     public Configuration() {
         String configname = "test.properties";
@@ -38,12 +39,31 @@ public class Configuration {
         InputStream input = null;
 
         try {
-            input = new FileInputStream(configname);
+            // input = new FileInputStream(configname);
+        	
+            input = this.getClass().getClassLoader().getResourceAsStream(configname);
 
             // load a properties file
             prop.load(input);
 
             // get the property value and print it out
+            username = prop.getProperty("username", username);
+            logger.debug("Configuration username: {}", username);
+            
+            password = prop.getProperty("password", password);
+            logger.debug("Configuration password: {}", password);
+            
+            String b = password = prop.getProperty("useproxy");
+            logger.debug("Configuration read useproxy: {}", b);
+            if (b.equals("true")) {
+            	useproxy = true;
+            }
+            
+            if (b.equals("false")) {
+            	useproxy = false;
+            }
+            logger.debug("Configuration useproxy: {}", useproxy);
+            
             host = prop.getProperty("host");
             logger.debug("Configuration host: {}", host);
 
