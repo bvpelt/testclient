@@ -257,11 +257,11 @@ public class LifeCycleSteps {
 
         String title = URLEncoder.encode("lifecycle", "UTF-8");
         String queryParameters = "q=" + title + "&pageSize=100&status=" + status;
-        String url = conf.getDatasets(true) + "/" + queryParameters;
+        String url = conf.getDatasets(false) + "/" + queryParameters;
 
         createTestClient();
 
-        response = tc.sendRequest(url, TestClient.HTTPPOST);
+        response = tc.sendRequest(url, TestClient.HTTPGET);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, tc.getStatusCode());
@@ -307,15 +307,15 @@ public class LifeCycleSteps {
 
     @Then("^There are no more test datasets with status (.*)$")
     public void thereAreNoMoreTestDatasetsWithStatusDraft(String status) throws Throwable {
-        logger.debug("Start: There are test datasets with status {}", status);
+        logger.debug("Start: There are no more test datasets with status {}", status);
 
         String title = URLEncoder.encode("lifecycle", "UTF-8");
         String queryParameters = "q=" + title + "&pageSize=100&status=" + status;
-        String url = conf.getDatasets(true) + "/" + queryParameters;
+        String url = conf.getDatasets(false) + "/" + queryParameters;
 
         createTestClient();
 
-        response = tc.sendRequest(url, TestClient.HTTPPOST);
+        response = tc.sendRequest(url, TestClient.HTTPGET);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(200, tc.getStatusCode());

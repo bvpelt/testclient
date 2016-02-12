@@ -1,8 +1,8 @@
 .classpath
 .idea/*
-.idea/libraries/*
 .project
 .settings/*
+*.iml
 *.log
 example.*
 output/*
