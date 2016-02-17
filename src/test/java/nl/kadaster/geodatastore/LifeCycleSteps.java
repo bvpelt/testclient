@@ -255,7 +255,7 @@ public class LifeCycleSteps {
     public void thereAreTestDatasetsWithStatusDraft(String status) throws Throwable {
         logger.debug("Start: There are test datasets with status {}", status);
 
-        String title = URLEncoder.encode("lifecycle", "UTF-8");
+        String title = URLEncoder.encode(datasetFileName, "UTF-8");
         String queryParameters = "q=" + title + "&pageSize=100&status=" + status;
         String url = conf.getDatasets(false) + "/" + queryParameters;
 
@@ -309,7 +309,7 @@ public class LifeCycleSteps {
     public void thereAreNoMoreTestDatasetsWithStatusDraft(String status) throws Throwable {
         logger.debug("Start: There are no more test datasets with status {}", status);
 
-        String title = URLEncoder.encode("lifecycle", "UTF-8");
+        String title = URLEncoder.encode(datasetFileName, "UTF-8");
         String queryParameters = "q=" + title + "&pageSize=100&status=" + status;
         String url = conf.getDatasets(false) + "/" + queryParameters;
 

@@ -185,7 +185,7 @@ public class TestClient {
 			String path = uri.getPath();
 			String authority = uri.getAuthority();
 			String query = uri.getQuery();
-			String fragment = uri.getFragment();
+			String fragment = uri.getFragment(); // points to location in document http://host/page#fragment
 
 			// if authority
 			// split userinfo:host:port,
@@ -337,7 +337,7 @@ public class TestClient {
 
 		URI uri = null;
 		
-		String fullUrl = scheme + "://" + host + "/"+ path;
+		String fullUrl = scheme + "://" + host + path;
 		
 		uri = new URI(fullUrl);
 		
